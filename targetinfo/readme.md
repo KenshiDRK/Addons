@@ -1,6 +1,6 @@
 # TargetInfo #
 
-This addon shows some memory information of your current target, provided the target is an NPC. This information is otherwise not available in the game.
+Modified version of this addon that shows some memory information of your current target, provided the target is an NPC. This information is otherwise not available in the game.
 
 Per settings file adjustable settings:
 
@@ -10,3 +10,11 @@ Per settings file adjustable settings:
   The full ID, containing zone information and mob category as well.
 `ShowSpeed`
   Shows percentual deviations from regular movement speed (+x% and -x%).
+`ShowClaimName`
+  Shows the name of the player that has the claim (only for mobs).
+`ShowClaimID`
+  Shows the ID of the player that has the claim (only for mobs).
+`ShowTargetName`
+  Shows the name of the target that is targetting your target(only for PC's).
+`ShowTargetID`
+  Shows the ID of the target that is targetting your target(only for PC's).
