@@ -164,21 +164,19 @@ windower.register_event('prerender', function()
                             buff[member_id[k]][i] = 0
                         end
                         image:hide()
-                    elseif member.zone == zone then
+                    else
                         if buff[member_id[k]][i] ~= 255 and buff[member_id[k]][i] ~= 0 then
+                            image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff[member_id[k]][i] .. '.png')
                             -- Adjust position for party member count
-                            if i >= 17 then
+                            if party_info.party1_count ~= nil and i >= 17 then
                                 image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
-                            elseif i <= 16 then
+                            elseif party_info.party1_count ~= nil and i <= 16 then
                                 image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
                             end
-                            image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff[member_id[k]][i] .. '.png')
                             image:show()
                         else
                             image:hide()
                         end
-                    else
-                        image:hide()
                     end
                 else
                     image:hide()

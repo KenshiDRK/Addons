@@ -40,6 +40,7 @@ defaults.ShowSatchel = true
 defaults.ShowSack = true
 defaults.ShowCase = true
 defaults.ShowWardrobe = true
+defaults.ShowWardrobe2 = true
 defaults.ShowSafe = true
 defaults.ShowSafe2 = true
 defaults.ShowStorage = true
@@ -70,7 +71,6 @@ defaults.display.text.stroke.green = 0
 defaults.display.text.stroke.blue = 0
 
 settings = config.load(defaults)
-settings:save()
 
 text_box = texts.new(settings.display, settings)
 
@@ -99,6 +99,9 @@ initialize = function(text, settings)
     end
     if settings.ShowWardrobe then
         properties:append(' ${war_current|0}${war_max|0}${war_diff|0}')
+    end
+    if settings.ShowWardrobe2 then
+        properties:append(' ${war2_current|0}${war2_max|0}${war2_diff|0}')
     end
     if settings.ShowSafe then
         properties:append(' ${safe_current|0}${safe_max|0}${safe_diff|0}')
@@ -253,6 +256,28 @@ windower.register_event('prerender', function()
                 '\\cs(0,255,0)' .. (' → ' .. (get.wardrobe.max - get.wardrobe.count):string():lpad(' ', 2))
             or 
                 '\\cs(255,128,0)' .. (' → '.. (get.wardrobe.max - get.wardrobe.count):string():lpad(' ', 2))) .. '\\cr'
+        local war2_color = get.wardrobe2.max - get.wardrobe2.count
+        info.war2_current = (
+            war2_color == 0 and
+                '\\cs(255,0,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))
+            or war2_color > 10 and
+                '\\cs(0,255,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))
+            or 
+                '\\cs(255,128,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))) .. '\\cr'
+        info.war2_max = (
+            war2_color == 0 and
+                '\\cs(255,0,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))
+            or war2_color > 10 and
+                '\\cs(0,255,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))
+            or 
+                '\\cs(255,128,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))) .. '\\cr'
+        info.war2_diff = (
+            war2_color == 0 and
+                '\\cs(255,0,0)' .. (' → ' .. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))
+            or war2_color > 10 and
+                '\\cs(0,255,0)' .. (' → ' .. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))
+            or 
+                '\\cs(255,128,0)' .. (' → '.. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))) .. '\\cr'
         local safe_color = get.safe.max - get.safe.count
         info.safe_current = (
             safe_color == 0 and
