@@ -60,7 +60,6 @@ defaults.display.text.stroke.green = 0
 defaults.display.text.stroke.blue = 0
 
 settings = config.load(defaults)
-settings:save()
 
 treasure_text = texts.new(settings.display, settings)
 
@@ -137,9 +136,7 @@ windower.register_event('prerender', function()
         if treasure[i] then
             if goals[i] then
                 local diff = os.difftime(goals[i], os.time())
-                local timer = {}
-                local item = {}
-                item[i] = res.items[treasure[i].item_id].name
+                local timer = {}    
                 timer[i] = os.date('!%M:%S', diff)
                 if diff < 0 then -- stop the timer when 00:00 so it don't show 59:59 for a brief moment
                     remove:add('index' .. i)
@@ -147,11 +144,11 @@ windower.register_event('prerender', function()
                 else
                     info['index' .. i] = (
                         diff < 60 and
-                            '\\cs(255,0,0)' .. item[i] .. ' → ' .. timer[i]
+                            '\\cs(255,0,0)' .. res.items[treasure[i].item_id].name .. ' → ' .. timer[i]
                         or diff > 180 and
-                            '\\cs(0,255,0)' .. item[i] .. ' → ' .. timer[i]
+                            '\\cs(0,255,0)' .. res.items[treasure[i].item_id].name .. ' → ' .. timer[i]
                         or
-                            '\\cs(255,128,0)' .. item[i] .. ' → ' .. timer[i]) .. '\\cr'
+                            '\\cs(255,128,0)' .. res.items[treasure[i].item_id].name .. ' → ' .. timer[i]) .. '\\cr'
                     
                 end
             else -- show item name in case the addon is loaded with items on tresure box
