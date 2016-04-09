@@ -34,7 +34,6 @@ defaults.display.text.alpha = 255
 defaults.display.text.size = 12
 
 settings = config.load(defaults)
-settings:save()
 
 text_box = texts.new(settings.display, settings)
 
@@ -93,7 +92,13 @@ windower.register_event('prerender', function()
         local info = {}
         info.hex = mob.id % 0x100000000
         info.full = mob.id
-        local speed = (100 * (mob.movement_speed / 5 - 1)):round(2)
+        local status_name = res.statuses[mob.status].english
+        local speed
+        if status_name == "Chocobo" or status_name == "Mount" then
+            speed = (100 * (mob.movement_speed / 4)):round(2)
+        else
+            speed = (100 * (mob.movement_speed / 5 - 1)):round(2)
+        end
         info.speed = (
             speed > 0 and
                 '\\cs(0,255,0)' .. ('+' .. speed):lpad(' ', 5)
