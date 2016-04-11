@@ -92,9 +92,8 @@ windower.register_event('prerender', function()
         local info = {}
         info.hex = mob.id % 0x100000000
         info.full = mob.id
-        local status_name = res.statuses[mob.status].english
         local speed
-        if status_name == "Chocobo" or status_name == "Mount" then
+        if mob.status == 5 or mob.status == 85 then
             speed = (100 * (mob.movement_speed / 4)):round(2)
         else
             speed = (100 * (mob.movement_speed / 5 - 1)):round(2)
