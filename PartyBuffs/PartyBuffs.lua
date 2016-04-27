@@ -66,34 +66,18 @@ do
   
 end
 
-member_id = {nil, nil, nil, nil, nil}
+member_table = T{}
 
-names = {nil, nil, nil, nil, nil}
-
-buff = {}
+buffs = {}
 
 windower.register_event('incoming chunk', function(id, data)
         
     if id == 0x0DD then
         local packet = packets.parse('incoming', data)
-        local party = windower.ffxi.get_party()
-        local key_indices = {'p1', 'p2', 'p3', 'p4', 'p5',}
         
-        for k = 1, 5 do
-            local member = party[key_indices[k]]
-            
-            if names[k] == packet['Name'] then
-                buff[k] = packet['ID']
-                member_id[k] = packet['ID']
-            end
-            
-            coroutine.sleep(3)
-            if member and member.name == packet['Name'] then
-                if not member_id[k] or member_id[k] ~= packet['ID'] then
-                    buff[k] = packet['ID']
-                    member_id[k] = packet['ID']
-                end
-            end
+        if not member_table:contains(packet['Name']) then
+            member_table:append(packet['Name'])
+            member_table[packet['Name']] = packet['ID']
         end
         
     end
@@ -102,11 +86,11 @@ windower.register_event('incoming chunk', function(id, data)
         
         for  k = 0, 4 do
             local id = data:unpack('I', k*48+5)
-            buff[id] = T{}
+            buffs[id] = {}
             
             if id ~= 0 then
                 for i = 1, 32 do
-                    buff[id][i] = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
+                    buffs[id][i] = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
                 end
             end
         end
@@ -136,47 +120,37 @@ windower.register_event('prerender', function()
     for k = 1, 5 do
         local member = party[key_indices[k]]
         
-        if member then
-            if not names[k] or names[k] ~= member.name then
-                names[k] = member.name
-            end
-        end
-        
         if member and member.mob then
-            if not member_id[k] or member_id[k] ~= member.mob.id then
-                buff[k] = member.mob.id
-                member_id[k] = member.mob.id
+            if not member.mob.is_npc and not member_table:contains(member.name) then
+                member_table:append(member.name)
+                member_table[member.name] = member.mob.id
             end
         end
         
         for image, i in party_buffs[k]:it() do
-            if zoning_bool then
-                if member_id[k] and buff[member_id[k]] and buff[member_id[k]][i] and buff[member_id[k]][i] ~= 0 then
-                    buff[member_id[k]][i] = 0
-                end
-                image:hide()
-            elseif buff[member_id[k]] and buff[member_id[k]][i] then
-                if member then
-                    if member.mob and member.mob.is_npc then
+            if member then
+                if buffs[member_table[member.name]] and buffs[member_table[member.name]][i] then
+                    if zoning_bool then
+                        if buffs[member_table[member.name]][i] ~= 0 then
+                            buffs[member_table[member.name]][i] = 0
+                        end
                         image:hide()
                     elseif member.zone ~= zone then
-                        if member_id[k] and buff[member_id[k]] and buff[member_id[k]][i] and buff[member_id[k]][i] ~= 0 then
-                            buff[member_id[k]][i] = 0
+                        if buffs[member_table[member.name]][i] ~= 0 then
+                            buffs[member_table[member.name]][i] = 0
                         end
                         image:hide()
-                    else
-                        if buff[member_id[k]][i] ~= 255 and buff[member_id[k]][i] ~= 0 then
-                            image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff[member_id[k]][i] .. '.png')
-                            -- Adjust position for party member count
-                            if party_info.party1_count ~= nil and i >= 17 then
-                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
-                            elseif party_info.party1_count ~= nil and i <= 16 then
-                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
-                            end
-                            image:show()
+                    elseif buffs[member_table[member.name]][i] ~= 255 and buffs[member_table[member.name]][i] ~= 0 then
+                        image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buffs[member_table[member.name]][i] .. '.png')
+                        -- Adjust position for party member count
+                        if i <= 16 then
+                            image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
                         else
-                            image:hide()
+                            image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
                         end
+                        image:show()
+                    else
+                        image:hide()
                     end
                 else
                     image:hide()
