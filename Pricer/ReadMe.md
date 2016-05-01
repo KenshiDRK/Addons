@@ -9,4 +9,4 @@ Pricer Commands:
 //price <server> <item> (search a specified item in the specified server)
  //price <server> stack <item> (search a stack of the specified item in the specified server)
 
-![Pricer](http://imgur.com/8Wgquhn)
+![Pricer](http://i.imgur.com/8Wgquhn.jpg)
