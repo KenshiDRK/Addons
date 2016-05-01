@@ -106,7 +106,7 @@ windower.register_event('incoming chunk', function(id, data)
 end)
 
 party_buffs_y_pos = {}
-for i = 1, 6 do
+for i = 2, 6 do
     local y_pos = windower.get_windower_settings().ui_y_res - 5
     party_buffs_y_pos[i] = y_pos - 20 * i
 end
