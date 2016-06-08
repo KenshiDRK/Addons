@@ -143,10 +143,12 @@ windower.register_event('prerender', function()
                     elseif buffs[member_table[member.name]][i] ~= 255 and buffs[member_table[member.name]][i] ~= 0 then
                         image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buffs[member_table[member.name]][i] .. '.png')
                         -- Adjust position for party member count
-                        if i <= 16 then
-                            image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
-                        else
-                            image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
+                        if party_info.party1_count > 1 then
+                            if i <= 16 then
+                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
+                            else
+                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
+                            end
                         end
                         image:show()
                     else
