@@ -1,4 +1,4 @@
---[[Copyright © 2015, Kenshi
+--[[Copyright © 2016, Kenshi
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -9,7 +9,7 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
-    * Neither the name of BCTimer nor the
+    * Neither the name of InvSpace nor the
       names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
 
@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'InvSpace'
 _addon.author = 'Kenshi'
-_addon.version = '2.0'
+_addon.version = '3.0'
 
 
 require('luau')
@@ -41,10 +41,13 @@ defaults.ShowSack = true
 defaults.ShowCase = true
 defaults.ShowWardrobe = true
 defaults.ShowWardrobe2 = true
+defaults.ShowWardrobe3 = false
+defaults.ShowWardrobe4 = false
 defaults.ShowSafe = true
 defaults.ShowSafe2 = true
 defaults.ShowStorage = true
 defaults.ShowLocker = true
+defaults.ShowTemporary = false
 defaults.ShowGil = true
 defaults.display = {}
 defaults.display.pos = {}
@@ -72,7 +75,15 @@ defaults.display.text.stroke.blue = 0
 
 settings = config.load(defaults)
 
-text_box = texts.new(settings.display, settings)
+bags_text = texts.new(settings.display, settings)
+
+local bag_names = T{'Inventory', 'Satchel', 'Sack', 'Case', 'Wardrobe', 'Wardrobe2', 'Wardrobe3', 'Wardrobe4', 'Safe', 'Safe2', 'Storage', 'Locker', 'Temporary'}
+for i = 1, 13 do
+    if defaults['Show'..bag_names[i]] then
+        bags_text:appendline(' ${current_'..i..'|0}${max_'..i..'|0}${diff_'..i..'|0}')
+    end
+end
+bags_text:appendline(' ${gil|0}')
 
 -- Function to comma the gils
 
@@ -81,51 +92,8 @@ function comma_value(n) -- credit http://richard.warburton.it
 	return left..(num:reverse():gsub('(%d%d%d)','%1,'):reverse())..right
 end
 
--- Constructor
-
-initialize = function(text, settings)
-    local properties = L{}
-    if settings.ShowInventory then
-        properties:append(' ${inv_current|0}${inv_max|0}${inv_diff|0}')
-    end
-    if settings.ShowSatchel then
-        properties:append(' ${sat_current|0}${sat_max|0}${sat_diff|0}')
-    end
-    if settings.ShowSack then
-        properties:append(' ${sac_current|0}${sac_max|0}${sac_diff|0}')
-    end
-    if settings.ShowCase then
-        properties:append(' ${case_current|0}${case_max|0}${case_diff|0}')
-    end
-    if settings.ShowWardrobe then
-        properties:append(' ${war_current|0}${war_max|0}${war_diff|0}')
-    end
-    if settings.ShowWardrobe2 then
-        properties:append(' ${war2_current|0}${war2_max|0}${war2_diff|0}')
-    end
-    if settings.ShowSafe then
-        properties:append(' ${safe_current|0}${safe_max|0}${safe_diff|0}')
-    end
-    if settings.ShowSafe2 then
-        properties:append(' ${safe2_current|0}${safe2_max|0}${safe2_diff|0}')
-    end
-    if settings.ShowStorage then
-        properties:append(' ${sto_current|0}${sto_max|0}${sto_diff|0}')
-    end
-    if settings.ShowLocker then
-        properties:append(' ${loc_current|0}${loc_max|0}${loc_diff|0}')
-    end
-    if settings.ShowGil then
-        properties:append(' ${gil|0}')
-    end
-    text:clear()
-    text:append(properties:concat('\n'))
-end
-
-text_box:register_event('reload', initialize)
-
 windower.register_event('incoming chunk',function(id)
-    if id == 0xB and text_box:visible() then
+    if id == 0xB and bags_text:visible() then
         zoning_bool = true
     elseif id == 0xA and zoning_bool then
         zoning_bool = nil
@@ -135,244 +103,48 @@ end)
 -- Events
 
 windower.register_event('prerender', function()
-    local get = windower.ffxi.get_bag_info()
+    local bags = windower.ffxi.get_bag_info()
     local giles = windower.ffxi.get_items().gil
     if not windower.ffxi.get_info().logged_in or not windower.ffxi.get_player() then
-        text_box:hide()
+        bags_text:hide()
         return
     end
     if zoning_bool then
-        text_box:hide()
+        bags_text:hide()
         return
     else
-        local info = {}
-        local inv_color = get.inventory.max - get.inventory.count
-        info.inv_current = (
-            inv_color == 0 and
-                '\\cs(255,0,0)' .. ('Inventory: '..get.inventory.count:string():lpad(' ', 2))
-            or inv_color > 10 and
-                '\\cs(0,255,0)' .. ('Inventory: '..get.inventory.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Inventory: '..get.inventory.count:string():lpad(' ', 2))) .. '\\cr'
-        info.inv_max = (
-            inv_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.inventory.max:string():lpad(' ', 2))
-            or inv_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.inventory.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.inventory.max:string():lpad(' ', 2))) .. '\\cr'
-        info.inv_diff = (
-            inv_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.inventory.max - get.inventory.count):string():lpad(' ', 2))
-            or inv_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.inventory.max - get.inventory.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.inventory.max - get.inventory.count):string():lpad(' ', 2))) .. '\\cr'
-        local sat_color = get.satchel.max - get.satchel.count
-        info.sat_current = (
-            sat_color == 0 and
-                '\\cs(255,0,0)' .. ('Satchel:   '..get.satchel.count:string():lpad(' ', 2))
-            or sat_color > 10 and
-                '\\cs(0,255,0)' .. ('Satchel:   '..get.satchel.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Satchel:   '..get.satchel.count:string():lpad(' ', 2))) .. '\\cr'
-        info.sat_max = (
-            sat_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.satchel.max:string():lpad(' ', 2))
-            or sat_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.satchel.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.satchel.max:string():lpad(' ', 2))) .. '\\cr'
-        info.sat_diff = (
-            sat_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.satchel.max - get.satchel.count):string():lpad(' ', 2))
-            or sat_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.satchel.max - get.satchel.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.satchel.max - get.satchel.count):string():lpad(' ', 2))) .. '\\cr'
-        local sac_color = get.sack.max - get.sack.count
-        info.sac_current = (
-            sac_color == 0 and
-                '\\cs(255,0,0)' .. ('Sack:      '..get.sack.count:string():lpad(' ', 2))
-            or sac_color > 10 and
-                '\\cs(0,255,0)' .. ('Sack:      '..get.sack.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Sack:      '..get.sack.count:string():lpad(' ', 2))) .. '\\cr'
-        info.sac_max = (
-            sac_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.sack.max:string():lpad(' ', 2))
-            or sac_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.sack.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.sack.max:string():lpad(' ', 2))) .. '\\cr'
-        info.sac_diff = (
-            sac_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.sack.max - get.sack.count):string():lpad(' ', 2))
-            or sac_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.sack.max - get.sack.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.sack.max - get.sack.count):string():lpad(' ', 2))) .. '\\cr'
-        local case_color = get.case.max - get.case.count
-        info.case_current = (
-            case_color == 0 and
-                '\\cs(255,0,0)' .. ('Case:      '..get.case.count:string():lpad(' ', 2))
-            or case_color > 10 and
-                '\\cs(0,255,0)' .. ('Case:      '..get.case.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Case:      '..get.case.count:string():lpad(' ', 2))) .. '\\cr'
-        info.case_max = (
-            case_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.case.max:string():lpad(' ', 2))
-            or case_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.case.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.case.max:string():lpad(' ', 2))) .. '\\cr'
-        info.case_diff = (
-            case_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.case.max - get.case.count):string():lpad(' ', 2))
-            or case_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.case.max - get.case.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.case.max - get.case.count):string():lpad(' ', 2))) .. '\\cr'
-        local war_color = get.wardrobe.max - get.wardrobe.count
-        info.war_current = (
-            war_color == 0 and
-                '\\cs(255,0,0)' .. ('Wardrobe:  '..get.wardrobe.count:string():lpad(' ', 2))
-            or war_color > 10 and
-                '\\cs(0,255,0)' .. ('Wardrobe:  '..get.wardrobe.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Wardrobe:  '..get.wardrobe.count:string():lpad(' ', 2))) .. '\\cr'
-        info.war_max = (
-            war_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.wardrobe.max:string():lpad(' ', 2))
-            or war_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.wardrobe.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.wardrobe.max:string():lpad(' ', 2))) .. '\\cr'
-        info.war_diff = (
-            war_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.wardrobe.max - get.wardrobe.count):string():lpad(' ', 2))
-            or war_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.wardrobe.max - get.wardrobe.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.wardrobe.max - get.wardrobe.count):string():lpad(' ', 2))) .. '\\cr'
-        local war2_color = get.wardrobe2.max - get.wardrobe2.count
-        info.war2_current = (
-            war2_color == 0 and
-                '\\cs(255,0,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))
-            or war2_color > 10 and
-                '\\cs(0,255,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Wardrobe2: '..get.wardrobe2.count:string():lpad(' ', 2))) .. '\\cr'
-        info.war2_max = (
-            war2_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))
-            or war2_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.wardrobe2.max:string():lpad(' ', 2))) .. '\\cr'
-        info.war2_diff = (
-            war2_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))
-            or war2_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.wardrobe2.max - get.wardrobe2.count):string():lpad(' ', 2))) .. '\\cr'
-        local safe_color = get.safe.max - get.safe.count
-        info.safe_current = (
-            safe_color == 0 and
-                '\\cs(255,0,0)' .. ('Safe:      '..get.safe.count:string():lpad(' ', 2))
-            or safe_color > 10 and
-                '\\cs(0,255,0)' .. ('Safe:      '..get.safe.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Safe:      '..get.safe.count:string():lpad(' ', 2))) .. '\\cr'
-        info.safe_max = (
-            safe_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.safe.max:string():lpad(' ', 2))
-            or safe_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.safe.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.safe.max:string():lpad(' ', 2))) .. '\\cr'
-        info.safe_diff = (
-            safe_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.safe.max - get.safe.count):string():lpad(' ', 2))
-            or safe_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.safe.max - get.safe.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.safe.max - get.safe.count):string():lpad(' ', 2))) .. '\\cr'
-        local safe2_color = get.safe2.max - get.safe2.count
-        info.safe2_current = (
-            safe2_color == 0 and
-                '\\cs(255,0,0)' .. ('Safe2:     '..get.safe2.count:string():lpad(' ', 2))
-            or safe2_color > 10 and
-                '\\cs(0,255,0)' .. ('Safe2:     '..get.safe2.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Safe2:     '..get.safe2.count:string():lpad(' ', 2))) .. '\\cr'
-        info.safe2_max = (
-            safe2_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.safe2.max:string():lpad(' ', 2))
-            or safe2_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.safe2.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.safe2.max:string():lpad(' ', 2))) .. '\\cr'
-        info.safe2_diff = (
-            safe2_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.safe2.max - get.safe2.count):string():lpad(' ', 2))
-            or safe2_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.safe2.max - get.safe2.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.safe2.max - get.safe2.count):string():lpad(' ', 2))) .. '\\cr'
-        local sto_color = get.storage.max - get.storage.count
-        info.sto_current = (
-            sto_color == 0 and
-                '\\cs(255,0,0)' .. ('Storage:   '..get.storage.count:string():lpad(' ', 2))
-            or sto_color > 10 and
-                '\\cs(0,255,0)' .. ('Storage:   '..get.storage.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Storage:   '..get.storage.count:string():lpad(' ', 2))) .. '\\cr'
-        info.sto_max = (
-            sto_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.storage.max:string():lpad(' ', 2))
-            or sto_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.storage.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.storage.max:string():lpad(' ', 2))) .. '\\cr'
-        info.sto_diff = (
-            sto_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.storage.max - get.storage.count):string():lpad(' ', 2))
-            or sto_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.storage.max - get.storage.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.storage.max - get.storage.count):string():lpad(' ', 2))) .. '\\cr'
-        local loc_color = get.locker.max - get.locker.count
-        info.loc_current = (
-            loc_color == 0 and
-                '\\cs(255,0,0)' .. ('Locker:    '..get.locker.count:string():lpad(' ', 2))
-            or loc_color > 10 and
-                '\\cs(0,255,0)' .. ('Locker:    '..get.locker.count:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('Locker:    '..get.locker.count:string():lpad(' ', 2))) .. '\\cr'
-        info.loc_max = (
-            loc_color == 0 and
-                '\\cs(255,0,0)' .. ('/'..get.locker.max:string():lpad(' ', 2))
-            or loc_color > 10 and
-                '\\cs(0,255,0)' .. ('/'..get.locker.max:string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. ('/'..get.locker.max:string():lpad(' ', 2))) .. '\\cr'
-        info.loc_diff = (
-            loc_color == 0 and
-                '\\cs(255,0,0)' .. (' → ' .. (get.locker.max - get.locker.count):string():lpad(' ', 2))
-            or loc_color > 10 and
-                '\\cs(0,255,0)' .. (' → ' .. (get.locker.max - get.locker.count):string():lpad(' ', 2))
-            or 
-                '\\cs(255,128,0)' .. (' → '.. (get.locker.max - get.locker.count):string():lpad(' ', 2))) .. '\\cr'
+        local info = S{}
+        for i = 1, 13 do
+            local color = bags[bag_names[i]:lower()].max - bags[bag_names[i]:lower()].count
+            info['current_'..i] = (
+                color == 0 and
+                    '\\cs(255,0,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))
+                or color > 10 and
+                    '\\cs(0,255,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))
+                or 
+                    '\\cs(255,128,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))).. '\\cr'
+            info['max_'..i] = (
+                color == 0 and
+                    '\\cs(255,0,0)' .. ('/'..bags[bag_names[i]:lower()].max:string():lpad(' ', 2))
+                or color > 10 and
+                    '\\cs(0,255,0)' .. ('/'..bags[bag_names[i]:lower()].max:string():lpad(' ', 2))
+                or 
+                    '\\cs(255,128,0)' .. ('/'..bags[bag_names[i]:lower()].max:string():lpad(' ', 2))) .. '\\cr'
+            info['diff_'..i] = (
+                color == 0 and
+                    '\\cs(255,0,0)' .. (' → ' .. (bags[bag_names[i]:lower()].max - bags[bag_names[i]:lower()].count):string():lpad(' ', 2))
+                or color > 10 and
+                    '\\cs(0,255,0)' .. (' → ' .. (bags[bag_names[i]:lower()].max - bags[bag_names[i]:lower()].count):string():lpad(' ', 2))
+                or 
+                    '\\cs(255,128,0)' .. (' → '.. (bags[bag_names[i]:lower()].max - bags[bag_names[i]:lower()].count):string():lpad(' ', 2))) .. '\\cr'
+        end
         local gil = comma_value(giles)
         info.gil = (
             comma_value(giles) == 0 and
                 '\\cs(255,0,0)' .. ('Gil: ' .. comma_value(giles):lpad(' ', 16))
             or
                 '\\cs(255,255,0)' .. ('Gil: ' .. comma_value(giles):lpad(' ', 16))) .. '\\cr'
-        text_box:update(info)
-        text_box:show()
+        bags_text:update(info)
+        bags_text:show()
     end
 end)
