@@ -57,6 +57,12 @@ windower.register_event('incoming chunk',function(id, data)
     if id == 0x00B and objetives_text:visible() then
         objetives_text:clear()
         objetives_text:hide()
+        for i = 2, 10 do
+            if objetives[i] then
+                objetives[i] = false
+            end
+        end
+        objetives[1] = true
         initialize(objetives_text, settings)
     elseif id == 0x00A then
         local packet = packets.parse('incoming', data)
@@ -80,10 +86,11 @@ windower.register_event('incoming chunk',function(id, data)
             else
                 subs_bool = true
                 total_kills = packet['Param 1']
-                if mains['current'] == '' then
+                if not mains['current'] or mains['current'] == '' then
                     mains['current'] = packet['Param 1']
                 end
             end
+            objetives_text:update(mains)
         elseif S{7326, 7327}:contains(message_id) then
             start_time = packet['Param 1']
             end_time = os.time() + start_time
@@ -101,6 +108,7 @@ windower.register_event('incoming chunk',function(id, data)
                 if not objetives[packet['Param 1']] then
                     objetives[packet['Param 1']] = true
                     initialize(objetives_text, settings)
+                    objetives_text:update(mains)
                 end
             elseif packet['Param 4'] == 3 then
                 current_progress[packet['Param 1']] = total[packet['Param 1']] - packet['Param 2']
@@ -116,6 +124,7 @@ windower.register_event('incoming chunk',function(id, data)
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
                 initialize(objetives_text, settings)
+                objetives_text:update(mains)
             end
             if packet['Param 4'] == 0 then
                 if not subs['current_'..packet['Param 1']] or subs['current_'..packet['Param 1']] == '\\cs(0,255,0)Completed!\\cr' or subs['current_'..packet['Param 1']] == '\\cs(255,0,0)Failed!\\cr' then
@@ -134,6 +143,7 @@ windower.register_event('incoming chunk',function(id, data)
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
                 initialize(objetives_text, settings)
+                objetives_text:update(mains)
             end
             if packet['Param 4'] == 0 then
                 if not subs['current_'..packet['Param 1']] or subs['current_'..packet['Param 1']] == '\\cs(0,255,0)Completed!\\cr' or subs['current_'..packet['Param 1']] == '\\cs(255,0,0)Failed!\\cr' then
@@ -152,6 +162,7 @@ windower.register_event('incoming chunk',function(id, data)
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
                 initialize(objetives_text, settings)
+                objetives_text:update(mains)
             end
             if packet['Param 4'] == 0 then
                 if not subs['current_'..packet['Param 1']] or subs['current_'..packet['Param 1']] == '\\cs(0,255,0)Completed!\\cr' or subs['current_'..packet['Param 1']] == '\\cs(255,0,0)Failed!\\cr' then
@@ -172,9 +183,8 @@ windower.register_event('incoming chunk',function(id, data)
             else
                 mains['omens'] = packet['Param 1']
             end
-        else
+            objetives_text:update(mains)
         end
-        objetives_text:update(mains)
     elseif id == 0x036 then
         local packet = packets.parse('incoming', data)
         mains['Main_Objetive'] = get_messages(packet['Message ID'], 0, 0, 0, 0)
