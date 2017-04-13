@@ -207,8 +207,10 @@ windower.register_event('incoming chunk',function(id, data)
         if subs_bool then
             for i = 2, 10 do
                 objetives[i] = false
+                subs['current_'..i] = nil
             end
             objetives[1] = true
+            subs['current_1'] = nil
         else
             for i = 1, 10 do
                 objetives[i] = false
