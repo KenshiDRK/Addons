@@ -204,6 +204,7 @@ windower.register_event('incoming chunk',function(id, data)
             objetives_text:update(mains)
         end
     elseif id == 0x05C then --wipe the secondary objetives after warping floor
+        coroutine.sleep(1)
         if subs_bool then
             for i = 2, 10 do
                 objetives[i] = false
