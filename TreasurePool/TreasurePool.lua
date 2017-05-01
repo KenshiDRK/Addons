@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'TreasurePool'
 _addon.author = 'Kenshi'
-_addon.version = '1.0'
+_addon.version = '1.1'
 
 require('luau')
 texts = require('texts')
@@ -131,12 +131,12 @@ windower.register_event('prerender', function()
         return
     end
     for i = 0, 9 do
-        if treasure[i] then
+        if treasure[i] and treasure[i].item_id then
             if goals[i] then
                 local diff = os.difftime(goals[i], os.time())
                 local timer = {}    
                 timer[i] = os.date('!%M:%S', diff)
-                if treasure[i].item_id and timer[i] then
+                if timer[i] then
                     if diff < 0 then -- stop the timer when 00:00 so it don't show 59:59 for a brief moment
                         remove:add('index' .. i)
                         remove:add('lotting' .. i)
@@ -166,7 +166,7 @@ windower.register_event('prerender', function()
             remove:add('index' .. i)
             remove:add('lotting' .. i)
         end
-    treasure_text:update(info)
+        treasure_text:update(info)
     end
     for entry in remove:it() do
         treasure_text[entry] = nil
