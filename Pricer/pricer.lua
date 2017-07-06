@@ -58,7 +58,7 @@ function get_sales(item,stack)
 	local sales = {}
 	local history = {}
 	local header = {}
-	header['cookie'] = temp_header or servers[defaults.server]
+	header['cookie'] = temp_header or servers[settings.server] or servers[defaults.server]
 	local result_table = {};
 		http.request{ 
 		url = "http://www.ffxiah.com/item/"..item..stack, 
@@ -176,7 +176,9 @@ windower.register_event('addon command', function(...)
     
     if args[1] then
         if server_names:contains(args[1]:lower()) then
-            if args[2]:lower() == "default" then
+            if not args[2] then
+                windower.add_to_chat(207,"Second argument not specified, use '//price help' for info.")
+            elseif args[2]:lower() == "default" then
                 if settings.server == args[1]:lower() then
                     windower.add_to_chat(207,'Server '..args[1]:lower()..' already set as default.')
                 else
@@ -194,7 +196,7 @@ windower.register_event('addon command', function(...)
                 if id then
                     get_sales(id,stack)
                 else
-                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info")
+                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info.")
                 end
             else
                 for i,v in pairs(args) do args[i]=windower.convert_auto_trans(args[i]) end
@@ -206,7 +208,7 @@ windower.register_event('addon command', function(...)
                 if id then
                     get_sales(id,stack)
                 else
-                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info")
+                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info.")
                 end
             end
         elseif args[1]:lower() == "help" then
@@ -226,7 +228,7 @@ windower.register_event('addon command', function(...)
                 if id then
                     get_sales(id,stack)
                 else
-                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info")
+                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info.")
                 end
         else
             for i,v in pairs(args) do args[i]=windower.convert_auto_trans(args[i]) end
@@ -238,9 +240,11 @@ windower.register_event('addon command', function(...)
                 if id then
                     get_sales(id,stack)
                 else
-                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info")
+                    windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info.")
                 end
         end
+    else
+        windower.add_to_chat(207,"First argument not specified, use '//price help' for info.")
     end
     
 end)
