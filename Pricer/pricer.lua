@@ -15,8 +15,6 @@ defaults.server = "ragnarok"
 
 settings = config.load(defaults)
 
-epoc = os.time{year=1970, day=1, month=1, hour=1}
-
 servers = {
     ["bahamut"] = "sid=1",
     ["shiva"] = "sid=2",
@@ -60,8 +58,8 @@ function get_sales(item,stack)
 	local header = {}
 	header['cookie'] = temp_header or servers[settings.server] or servers[defaults.server]
 	local result_table = {};
-		http.request{ 
-		url = "http://www.ffxiah.com/item/"..item..stack, 
+		http.request{
+		url = "http://www.ffxiah.com/item/"..item..stack,
 		sink = ltn12.sink.table(result_table),
 		headers = header
 	}
@@ -144,7 +142,7 @@ function get_sales(item,stack)
             history['seller_name'] = string.match(word,'"seller%_name":"(%w+)",')
             history['price'] = string.match(word,'"price":(%d+),')
             history['buyer_name'] = string.match(word,'"buyer%_name":"(%w+)",')
-            windower.add_to_chat(207,'('..os.date("%d %b., %Y %H:%M:%S",epoc+history['saleon'])..') '..tostring(history['seller_name']:color(5))..string.char(0x81, 0xA8)..tostring(history['buyer_name']:color(5))..' ['..tostring(comma_value(history['price'])..'G'):color(156)..']')
+            windower.add_to_chat(207,'('..os.date("%d %b., %Y %H:%M:%S",history['saleon'])..') '..tostring(history['seller_name']:color(5))..string.char(0x81, 0xA8)..tostring(history['buyer_name']:color(5))..' ['..tostring(comma_value(history['price'])..'G'):color(156)..']')
             max = max +1
             if max > 5 then break end
         end
