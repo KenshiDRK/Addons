@@ -22,9 +22,9 @@ objetives_text = texts.new(settings)
 
 local objetives = {true, false, false, false, false, false, false, false, false, false}
 local subs_bool = true
-local total = S{0,0,0,0,0,0,0,0,0,0}
-local mains = S{}
-local subs = S{}
+local total = {}
+local mains = {}
+local subs = {}
 local start_time = 0
 local start_kills = 0
 
@@ -50,6 +50,24 @@ objetives_text:register_event('reload', initialize)
 objetives_text:hide()
 if windower.ffxi.get_info().zone == 292 then -- Show if loaded in Omen
     objetives_text:show()
+end
+
+function party_size(message_id)
+    local party = windower.ffxi.get_party()
+    local key_indices = {'p1', 'p2', 'p3', 'p4', 'p5'}
+    local party_size = 1
+    local objetives_table = {[7330] = 1, [7331] = 3, [7332] = 1, [7333] = 3, [7334] = 2, [7335] = 3, [7336] = 3, [7337] = 5, [7338] = 3}
+    
+    for k = 1, 5 do
+        local member = party[key_indices[k]]
+        
+        if member and member.mob then
+            if not member.mob.is_npc then
+                party_size = party_size + 1
+            end
+        end
+    end
+    return objetives_table[message_id] * party_size
 end
 
 windower.register_event('incoming chunk',function(id, data)
@@ -98,7 +116,7 @@ windower.register_event('incoming chunk',function(id, data)
             subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             objetives_text:update(subs)
         elseif S{7330, 7331, 7332, 7333, 7334, 7335, 7336, 7337, 7338}:contains(message_id) then
-            local current_progress = S{0,0,0,0,0,0,0,0,0,0}
+            local current_progress = {}
             if packet['Param 4'] == 0 then
                 subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
                 total[packet['Param 1']] = packet['Param 2']
@@ -111,6 +129,15 @@ windower.register_event('incoming chunk',function(id, data)
                     objetives_text:update(mains)
                 end
             elseif packet['Param 4'] == 3 then
+                if not subs['Sub_Objetive_'..packet['Param 1']] then
+                    subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], party_size(message_id), packet['Param 3'], packet['Param 4'])
+                    total[packet['Param 1']] = party_size(message_id)
+                    if not objetives[packet['Param 1']] then
+                        objetives[packet['Param 1']] = true
+                        initialize(objetives_text, settings)
+                        objetives_text:update(mains)
+                    end
+                end
                 current_progress[packet['Param 1']] = total[packet['Param 1']] - packet['Param 2']
                 subs['current_'..packet['Param 1']] = total[packet['Param 1']] == packet['Param 2'] and '\\cs(0,255,0)Completed!\\cr' or current_progress[packet['Param 1']]
             elseif packet['Param 4'] == 2 then
