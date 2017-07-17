@@ -26,39 +26,40 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '1.0'
+_addon.version = '2.0'
+_addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
 packets = require('packets')
+config = require('config')
 require('pack')
 require('tables')
 
+defaults = {}
+defaults.size = 10
+
+settings = config.load(defaults)
+
+local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
 
 do
     local x_pos = windower.get_windower_settings().ui_x_res - 190
-    
     for k = 1, 5 do
         party_buffs[k] = T{}
         
-        for i = 1, 16 do
+        for i = 1, 32 do
             party_buffs[k][i] = images.new({
-                pos = {
-                    x = x_pos - (i*10),
+                color = {
+                    alpha = 255
                 },
-                draggable = false,
-            })
-        end
-        for i = 17, 32 do
-            party_buffs[k][i] = images.new({
-                pos = {
-                    x = x_pos - ((i-16)*10),
+                texture = {
+                    fit = false
                 },
                 draggable = false,
             })
         end
     end
-  
 end
 
 local member_table = S{nil, nil, nil, nil, nil}
@@ -66,7 +67,6 @@ local member_table = S{nil, nil, nil, nil, nil}
 local buffs = T{}
 
 windower.register_event('incoming chunk', function(id, data)
-        
     if id == 0x0DD then
         local packet = packets.parse('incoming', data)
         
@@ -74,12 +74,10 @@ windower.register_event('incoming chunk', function(id, data)
             member_table:append(packet['Name'])
             member_table[packet['Name']] = packet['ID']
         end
-        coroutine.schedule(Update, 1)
-        
+        coroutine.schedule(Update, 0.5)
     end
     
     if id == 0x076 then
-        
         for  k = 0, 4 do
             local id = data:unpack('I', k*48+5)
             buffs[id] = {}
@@ -94,7 +92,6 @@ windower.register_event('incoming chunk', function(id, data)
             end
         end
         Update()
-        
     end
     
     if id == 0xB then
@@ -104,10 +101,10 @@ windower.register_event('incoming chunk', function(id, data)
         zoning_bool = false
         coroutine.schedule(Update, 10)
     end
-    
 end)
 
-party_buffs_y_pos = {}
+local x_pos = windower.get_windower_settings().ui_x_res - 190
+local party_buffs_y_pos = {}
 for i = 2, 6 do
     local y_pos = windower.get_windower_settings().ui_y_res - 5
     party_buffs_y_pos[i] = y_pos - 20 * i
@@ -138,13 +135,15 @@ function Update()
                         image:hide()
                     else
                         image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buffs[member_table[member.name]][i] .. '.png')
+                        image:transparency(0)
+                        image:size(icon_size, icon_size)
                         -- Adjust position for party member count
                         if party_info.party1_count > 1 then
-                            if i <= 16 then
-                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + ((k-1)*20))
-                            else
-                                image:pos_y(party_buffs_y_pos[party_info.party1_count] + (((k-1)*20)+10))
-                            end
+                            local pt_y_pos = party_buffs_y_pos[party_info.party1_count] 
+                            local x = (icon_size == 20 and x_pos - (i*20)) or (i <= 16 and x_pos - (i*10)) or x_pos - ((i-16)*10)
+                            local y = (icon_size == 20 and pt_y_pos + ((k-1)*20)) or (i <= 16 and pt_y_pos + ((k-1)*20)) or  pt_y_pos + (((k-1)*20)+10)
+                            image:pos_x(x)
+                            image:pos_y(y)
                         end
                         image:show()
                     end
@@ -155,9 +154,7 @@ function Update()
             end
             image:update()
         end
-        
-    end
-    
+    end  
 end
 
 windower.register_event('load', function() --Create member table if addon is loaded while already in pt
@@ -175,5 +172,44 @@ windower.register_event('load', function() --Create member table if addon is loa
                 member_table[member.name] = member.mob.id
             end
         end
+    end
+end)
+
+windower.register_event('addon command', function(...)
+    local args = T{...}
+    if args[1] then
+        if args[1]:lower() == 'size' then
+            if not args[2] then
+                windower.add_to_chat(207,"Size not specified.")
+            elseif args[2] == '10' then
+                if icon_size == 10 then
+                    windower.add_to_chat(207,"Size already 10.")
+                else
+                    settings.size = 10
+                    icon_size = 10
+                    settings:save()
+                    Update()
+                    windower.add_to_chat(207,'Icons size set to 10x10.')
+                end
+            elseif args[2] == '20' then
+                if icon_size == 20 then
+                    windower.add_to_chat(207,"Size already 20.")
+                else
+                    settings.size = 20
+                    icon_size = 20
+                    settings:save()
+                    Update()
+                    windower.add_to_chat(207,'Icons size set to 20x20.')
+                end
+            else
+                windower.add_to_chat(207,'Icons size has to be 10 or 20.')
+            end
+        elseif args[1]:lower() == 'help' then
+            windower.add_to_chat(207,"Partybuffs Commands:")
+            windower.add_to_chat(207,"//pb|partybuffs size 10 (sets the icon size to 10x10)")
+            windower.add_to_chat(207,"//pb|partybuffs size 20 (sets the icon size to 20x20)")
+        end
+    else
+        windower.add_to_chat(207,"First argument not specified, use size or help.")
     end
 end)
