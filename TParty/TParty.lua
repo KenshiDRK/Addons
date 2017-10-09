@@ -6,11 +6,15 @@ require('sets')
 require('functions')
 texts = require('texts')
 config = require('config')
+require('vectors')
+require('maths')
 
 defaults = {}
 defaults.ShowTargetHPPercent = true
+defaults.ShowTargetDistance = true
 defaults.ShowPartyTP = true
 defaults.ShowPartyDistance = true
+defaults.ShowRanges = true
 
 settings = config.load(defaults)
 
@@ -34,6 +38,96 @@ hpp = texts.new('${hpp}', {
         red = 115,
         green = 166,
         blue = 213,
+    },
+})
+
+tdistance = texts.new('${distance||%.2f}', {
+    pos = {
+        x = -137,
+    },
+    bg = {
+        visible = false,
+    },
+    flags = {
+        right = true,
+        bottom = true,
+        bold = true,
+        draggable = false,
+        italic = false,
+    },
+    text = {
+        size = 10,
+        alpha = 185,
+        red = 255,
+        green = 255,
+        blue = 255,
+        stroke = {
+                width = 2,
+                alpha = 255,
+                red = 0,
+                green = 0,
+                blue = 0,
+                },
+    },
+})
+
+rdistance = texts.new('${rdistance||%.2f}', {
+    pos = {
+        x = -177,
+    },
+    bg = {
+        visible = false,
+    },
+    flags = {
+        right = true,
+        bottom = true,
+        bold = true,
+        draggable = false,
+        italic = false,
+    },
+    text = {
+        size = 12,
+        alpha = 185,
+        red = 255,
+        green = 255,
+        blue = 255,
+        stroke = {
+                width = 2,
+                alpha = 255,
+                red = 0,
+                green = 0,
+                blue = 0,
+                },
+    },
+})
+
+height = texts.new('${height||%.2f}', {
+    pos = {
+        x = -137,
+    },
+    bg = {
+        visible = false,
+    },
+    flags = {
+        right = true,
+        bottom = true,
+        bold = true,
+        draggable = false,
+        italic = false,
+    },
+    text = {
+        size = 10,
+        alpha = 185,
+        red = 255,
+        green = 255,
+        blue = 255,
+        stroke = {
+                width = 2,
+                alpha = 255,
+                red = 0,
+                green = 0,
+                blue = 0,
+                },
     },
 })
 
@@ -117,6 +211,26 @@ for i = 1, 6 do
     hpp_y_pos[i] = -51 - 20 * i
 end
 
+tdistance_y_pos = {}
+for i = 1, 6 do
+    tdistance_y_pos[i] = -75 - 20 * i
+end
+
+rdistance_y_pos = {}
+for i = 1, 6 do
+    rdistance_y_pos[i] = -65 - 20 * i
+end
+
+height_y_pos = {}
+for i = 1, 6 do
+    height_y_pos[i] = -55 - 20 * i
+end
+
+ranges_y_pos = {}
+for i = 1, 6 do
+    ranges_y_pos[i] = -65 - 20 * i
+end
+
 key_indices = {
     p0 = 1,
     p1 = 2,
@@ -164,6 +278,60 @@ windower.register_event('prerender', function()
         end
     else
         hpp:hide()
+    end
+    
+    -- Target distance and ranges text
+    if settings.ShowTargetDistance then
+        local player = windower.ffxi.get_player()
+        if player then
+            local t = windower.ffxi.get_mob_by_target('st') or windower.ffxi.get_mob_by_target('t')
+            if zoning_bool then
+                tdistance:hide()
+                rdistance:hide()
+                height:hide()
+            elseif t then
+                local s = windower.ffxi.get_mob_by_target('me')
+                t.height = t.z - s.z
+                t.rdistance = (t.distance + t.height^2):sqrt() 
+                t.distance = t.distance:sqrt()
+                local party_info = windower.ffxi.get_party_info()
+                if player.index == t.index then
+                    height:hide()
+                    tdistance:hide()
+                    rdistance:hide()
+                else
+                    height:show()
+                    tdistance:show()
+                    rdistance:show()
+                end
+        
+                -- Adjust position for party member count
+                tdistance:pos_y(tdistance_y_pos[party_info.party1_count])
+                rdistance:pos_y(rdistance_y_pos[party_info.party1_count])
+                height:pos_y(height_y_pos[party_info.party1_count])
+                -- Color
+                if t.spawn_type == 16 then
+                    if t.height >= 8.5 or t.height <= -7.5 then
+                        height:color(0,255,0)
+                    else
+                        height:color(255,0,0)
+                    end
+                else
+                    height:color(255,255,255)
+                end
+                rdistance:update(t)
+                tdistance:update(t)
+                height:update(t)
+            else
+                height:hide()
+                tdistance:hide()
+                rdistance:hide()
+            end
+        else
+            height:hide()
+            tdistance:hide()
+            rdistance:hide()
+        end
     end
 
     -- Alliance TP texts
