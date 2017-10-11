@@ -97,9 +97,9 @@ windower.register_event('incoming chunk',function(id, data)
             return
         end
         local message_id = packet['Message ID'] - 0x8000
-        if S{7317, 7321, 7322, 7323}:contains(message_id) then
+        if S{7316, 7320, 7321, 7322}:contains(message_id) then
             mains['Main_Objetive'] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
-            if S{7321, 7322, 7323}:contains(message_id) then
+            if S{7320, 7321, 7322}:contains(message_id) then
                 subs_bool = false
             else
                 subs_bool = true
@@ -109,13 +109,13 @@ windower.register_event('incoming chunk',function(id, data)
                 end
             end
             objetives_text:update(mains)
-        elseif S{7327, 7328}:contains(message_id) then
+        elseif S{7326, 7327}:contains(message_id) then
             start_time = packet['Param 1']
             end_time = os.time() + start_time
-        elseif message_id == 7329 then
+        elseif message_id == 7328 then
             subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             objetives_text:update(subs)
-        elseif S{7331, 7332, 7333, 7334, 7335, 7336, 7337, 7338, 7339}:contains(message_id) then
+        elseif S{7330, 7331, 7332, 7333, 7334, 7335, 7336, 7337, 7338}:contains(message_id) then
             local current_progress = {}
             if packet['Param 4'] == 0 then
                 subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
@@ -146,7 +146,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7340, 7342, 7344, 7346}:contains(message_id) then --Progress for this objetives goes on other messages
+        elseif S{7339, 7341, 7343, 7345}:contains(message_id) then --Progress for this objetives goes on other messages
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -165,7 +165,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7341, 7343, 7345, 7347}:contains(message_id) then --Progression messages for some objetives (adding failed and completed just to make sure, as it could go on both)
+        elseif S{7340, 7342, 7344, 7346}:contains(message_id) then --Progression messages for some objetives (adding failed and completed just to make sure, as it could go on both)
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -184,7 +184,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7348}:contains(message_id) then
+        elseif S{7347}:contains(message_id) then
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -204,7 +204,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif message_id == 7325 then
+        elseif message_id == 7324 then
             if packet['Param 1'] == 666 then
                 mains['omens'] = '\\cs(0,255,0)' ..packet['Param 1'].. '\\cr'
             else
@@ -216,7 +216,7 @@ windower.register_event('incoming chunk',function(id, data)
         local packet = packets.parse('incoming', data)
         mains['Main_Objetive'] = get_messages(packet['Message ID'], 0, 0, 0, 0)
         subs_bool = true
-        if packet['Message ID'] == 7324 then
+        if packet['Message ID'] == 7325 then
             mains['current'] = ''
             start_kills = 0
         end
