@@ -40,7 +40,6 @@ debuffs = {
     [11] = S{258,531}, --Bind
     [12] = S{216,217,708}, --Gravity
     [13] = S{56,79,344,345,703}, --Slow
-	[21] = S{286,472,884}, --addle/nocturne
 	[28] = S{575,720,738,746}, --terror
 	[31] = S{682}, --plague
     [128] = S{235,572,719}, --int down
@@ -59,6 +58,7 @@ debuffs = {
 	[192] = S{368,369,370,371,372,373,374,375}, --requiem
 	[194] = S{421,422,423}, --elegy
 	[217] = S{454,455,456,457,458,459,460,461,871,872,873,874,875,876,877,878}, --threnodies
+    [223] = S{286,472,884}, --addle/nocturne
     [242] = 242, --Absorb ACC
     [266] = 266, --Absorb STR
     [267] = 267, --Absorb DEX
@@ -130,7 +130,7 @@ end
 function update_box()
     local current_string = ''
     local player = windower.ffxi.get_player()
-    local target = windower.ffxi.get_mob_by_target('t')
+    local target = windower.ffxi.get_mob_by_target('st') or windower.ffxi.get_mob_by_target('t')
     
     if target and target.valid_target and target.is_npc and (target.claim_id ~= 0 or target.spawn_type == 16) then
     
