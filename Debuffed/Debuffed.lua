@@ -40,25 +40,26 @@ debuffs = {
     [11] = S{258,531}, --Bind
     [12] = S{216,217,708}, --Gravity
     [13] = S{56,79,344,345,703}, --Slow
-	[28] = S{575,720,738,746}, --terror
-	[31] = S{682}, --plague
+    [21] = S{286,884}, ----addle
+    [28] = S{575,720,738,746}, --terror
+    [31] = S{682}, --plague
     [128] = S{235,572,719}, --int down
     [129] = S{236,535}, --AGI down
     [130] = S{237}, --VIT down
     [131] = S{238}, --dex down
     [132] = S{239}, --mnd down
-	[133] = S{240,705}, --str down
-	[146] = S{524,699}, --accuracy down
-	[147] = S{319,651,659,726}, --attack down
+    [133] = S{240,705}, --str down
+    [146] = S{524,699}, --accuracy down
+    [147] = S{319,651,659,726}, --attack down
     [148] = S{610,841,842,882}, --Evasion Down
-	[149] = S{651,717,728}, -- defense down
-	[156] = S{112,707,725}, --Flash
-	[167] = S{656}, --Magic Def. Down
-	[168] = S{508}, --inhibit TP
-	[192] = S{368,369,370,371,372,373,374,375}, --requiem
-	[194] = S{421,422,423}, --elegy
-	[217] = S{454,455,456,457,458,459,460,461,871,872,873,874,875,876,877,878}, --threnodies
-    [223] = S{286,472,884}, --addle/nocturne
+    [149] = S{651,717,728}, -- defense down
+    [156] = S{112,707,725}, --Flash
+    [167] = S{656}, --Magic Def. Down
+    [168] = S{508}, --inhibit TP
+    [192] = S{368,369,370,371,372,373,374,375}, --requiem
+    [194] = S{421,422,423}, --elegy
+    [217] = S{454,455,456,457,458,459,460,461,871,872,873,874,875,876,877,878}, --threnodies
+    [223] = S{472}, --nocturne
     [242] = 242, --Absorb ACC
     [266] = 266, --Absorb STR
     [267] = 267, --Absorb DEX
@@ -68,7 +69,7 @@ debuffs = {
     [271] = 271, --Absorb MND
     [272] = 272, --Absorb CHR
     [404] = S{843,844,883}, --Magic Evasion Down
-	[597] = S{879}, --inundation
+    [597] = S{879}, --inundation
 
 }
 
@@ -223,7 +224,7 @@ function inc_action(act)
                 if debuffed_mobs[target] and debuffed_mobs[target][132] then
                     debuffed_mobs[target][132] = nil
                 end
-            elseif T{239}:contains(spell) then -- Rasp overwrittes Shock
+            elseif T{239}:contains(spell) then -- Shock overwrittes Drown
                 timers[spell] = os.clock() + 90
                 if debuffed_mobs[target] and debuffed_mobs[target][133] then
                     debuffed_mobs[target][133] = nil
@@ -236,6 +237,9 @@ function inc_action(act)
                 timers[spell] = os.clock() + 180
             elseif T{884}:contains(spell) then -- 3 min 10 secs spells durations
                 timers[spell] = os.clock() + 190
+                if debuffed_mobs[target] and debuffed_mobs[target][223] then
+                    debuffed_mobs[target][223] = nil
+                end
             elseif T{423,472}:contains(spell) then -- 4 min spells durations
                 timers[spell] = os.clock() + 240
             elseif T{345,726,727,728,879}:contains(spell) then -- 5 min spells durations
