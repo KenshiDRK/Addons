@@ -70,6 +70,7 @@ function party_size(message_id)
     return objetives_table[message_id] * party_size
 end
 
+--Omen messages in rom/353/58.dat
 windower.register_event('incoming chunk',function(id, data)
     local zone_id = windower.ffxi.get_info().zone
     if id == 0x00B and objetives_text:visible() then
@@ -97,9 +98,9 @@ windower.register_event('incoming chunk',function(id, data)
             return
         end
         local message_id = packet['Message ID'] - 0x8000
-        if S{7316, 7320, 7321, 7322}:contains(message_id) then
+        if S{7319, 7323, 7324, 7325}:contains(message_id) then
             mains['Main_Objetive'] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
-            if S{7320, 7321, 7322}:contains(message_id) then
+            if S{7323, 7324, 7325}:contains(message_id) then
                 subs_bool = false
             else
                 subs_bool = true
@@ -109,13 +110,13 @@ windower.register_event('incoming chunk',function(id, data)
                 end
             end
             objetives_text:update(mains)
-        elseif S{7326, 7327}:contains(message_id) then
+        elseif S{7329, 7330}:contains(message_id) then
             start_time = packet['Param 1']
             end_time = os.time() + start_time
-        elseif message_id == 7328 then
+        elseif message_id == 7331 then
             subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             objetives_text:update(subs)
-        elseif S{7330, 7331, 7332, 7333, 7334, 7335, 7336, 7337, 7338}:contains(message_id) then
+        elseif S{7333, 7334, 7335, 7336, 7337, 7338, 7339, 7340, 7341}:contains(message_id) then
             local current_progress = {}
             if packet['Param 4'] == 0 then
                 subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
@@ -146,7 +147,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7339, 7341, 7343, 7345}:contains(message_id) then --Progress for this objetives goes on other messages
+        elseif S{7342, 7344, 7346, 7348}:contains(message_id) then --Progress for this objetives goes on other messages
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -165,7 +166,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7340, 7342, 7344, 7346}:contains(message_id) then --Progression messages for some objetives (adding failed and completed just to make sure, as it could go on both)
+        elseif S{7343, 7345, 7347, 7349}:contains(message_id) then --Progression messages for some objetives (adding failed and completed just to make sure, as it could go on both)
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -184,7 +185,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif S{7347}:contains(message_id) then
+        elseif S{7350}:contains(message_id) then
             subs['Sub_Objetive_'..packet['Param 1']] = get_messages(message_id, packet['Param 1'], packet['Param 2'], packet['Param 3'], packet['Param 4'])
             if not objetives[packet['Param 1']] then
                 objetives[packet['Param 1']] = true
@@ -204,7 +205,7 @@ windower.register_event('incoming chunk',function(id, data)
                 subs['current_'..packet['Param 1']] = '\\cs(0,255,0)Completed!\\cr'
             end
             objetives_text:update(subs)
-        elseif message_id == 7324 then
+        elseif message_id == 7327 then
             if packet['Param 1'] == 666 then
                 mains['omens'] = '\\cs(0,255,0)' ..packet['Param 1'].. '\\cr'
             else
@@ -216,7 +217,7 @@ windower.register_event('incoming chunk',function(id, data)
         local packet = packets.parse('incoming', data)
         mains['Main_Objetive'] = get_messages(packet['Message ID'], 0, 0, 0, 0)
         subs_bool = true
-        if packet['Message ID'] == 7325 then
+        if packet['Message ID'] == 7326 then
             mains['current'] = ''
             start_kills = 0
         end
@@ -228,6 +229,10 @@ windower.register_event('incoming chunk',function(id, data)
             local actual_kills = start_kills + 1
             start_kills = actual_kills
             mains['current'] = total_kills - actual_kills
+            if mains['current'] <= 0 then
+                mains['Main_Objetive'] = '\\cs(0,255,0)Completed!\\cr'
+                mains['current'] = ''
+            end
             objetives_text:update(mains)
         end
     elseif id == 0x05C then --wipe the secondary objetives after warping floor
@@ -247,6 +252,14 @@ windower.register_event('incoming chunk',function(id, data)
         start_time = 0
         initialize(objetives_text, settings)
         objetives_text:update(mains)
+    elseif id == 0x00E then
+        local packet = packets.parse('incoming', data)
+        local mob = windower.ffxi.get_mob_by_id(packet['NPC'])
+        if mob and mob.name == 'Ethereal Ingress' and packet['_unknown2'] == 768 then
+            mains['Main_Objetive'] = '\\cs(0,255,0)Completed!\\cr'
+            mains['current'] = ''
+            objetives_text:update(mains)
+        end
     end
 end)
 
