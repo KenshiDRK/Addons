@@ -1,7 +1,8 @@
 require('chat')
 config = require('config')
 require 'strings'
-http = require('socket.http')
+require('socket')
+local https = require('ssl.https')
 res = require('resources')
 
 _addon.name = 'Pricer'
@@ -58,8 +59,8 @@ function get_sales(item,stack)
 	local header = {}
 	header['cookie'] = temp_header or servers[settings.server] or servers[defaults.server]
 	local result_table = {};
-		http.request{
-		url = "http://www.ffxiah.com/item/"..item..stack,
+		https.request{
+		url = "https://www.ffxiah.com/item/"..item..stack,
 		sink = ltn12.sink.table(result_table),
 		headers = header
 	}

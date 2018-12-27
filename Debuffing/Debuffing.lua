@@ -1,6 +1,6 @@
-_addon.name = 'Debuffed'
+_addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.2'
+_addon.version = '1.3'
 
 require('luau')
 packets = require('packets')
@@ -28,6 +28,8 @@ debuffed_mobs = {}
 
 helixes = S{278,279,280,281,282,283,284,285,
     885,886,887,888,889,890,891,892}
+    
+ja_spells = S{496,497,498,499,500,501}
 
 debuffs = {
     [2] = S{253,259,273,274,376,377,463,471,584,598,678}, --Sleep
@@ -128,6 +130,67 @@ function apply_helix(target, spell)
     debuffed_mobs[target][186] = {name = spell, timer = os.clock() + 230}
 end
 
+ja_spells_names = {
+    [496] = {
+        [1] = 'Fire Damage + 5%',
+        [2] = 'Fire Damage + 10%',
+        [3] = 'Fire Damage + 15%',
+        [4] = 'Fire Damage + 20%',
+        [5] = 'Fire Damage + 25%',
+        },
+    [497] = {
+        [1] = 'Ice Damage + 5%',
+        [2] = 'Ice Damage + 10%',
+        [3] = 'Ice Damage + 15%',
+        [4] = 'Ice Damage + 20%',
+        [5] = 'Ice Damage + 25%',
+        },
+    [498] = {
+        [1] = 'Wind Damage + 5%',
+        [2] = 'Wind Damage + 10%',
+        [3] = 'Wind Damage + 15%',
+        [4] = 'Wind Damage + 20%',
+        [5] = 'Wind Damage + 25%',
+        },
+    [499] = {
+        [1] = 'Earth Damage + 5%',
+        [2] = 'Earth Damage + 10%',
+        [3] = 'Earth Damage + 15%',
+        [4] = 'Earth Damage + 20%',
+        [5] = 'Earth Damage + 25%',
+        },
+    [500] = {
+        [1] = 'Lightning Damage + 5%',
+        [2] = 'Lightning Damage + 10%',
+        [3] = 'Lightning Damage + 15%',
+        [4] = 'Lightning Damage + 20%',
+        [5] = 'Lightning Damage + 25%',
+        },
+    [501] = {
+        [1] = 'Water Damage + 5%',
+        [2] = 'Water Damage + 10%',
+        [3] = 'Water Damage + 15%',
+        [4] = 'Water Damage + 20%',
+        [5] = 'Water Damage + 25%',
+        },
+}
+
+function apply_ja_spells(target, spell)
+    if not debuffed_mobs[target] then
+        debuffed_mobs[target] = {}
+    end
+    
+    local current = debuffed_mobs[target][1000]
+    if current and current.name == spell then
+        ja_tier = current.tier + 1
+    else
+        ja_tier = 1
+        ja_timer = os.clock() + 60
+    end
+    
+    debuffed_mobs[target][1000] = {name = spell, tier = ja_tier, timer = ja_timer}
+end
+
 function update_box()
     local current_string = ''
     local player = windower.ffxi.get_player()
@@ -137,14 +200,19 @@ function update_box()
     
         local debuff_table = debuffed_mobs[target.id]
 
-        current_string = 'Debuffed ['..target.name..']\n'
+        current_string = 'Debuffs ['..target.name..']\n'
         if debuff_table then
             for effect, spell in pairs(debuff_table) do
                 if spell then
                     if type(spell) == 'table' then
                         if (spell.timer - os.clock()) >= 0 then
-                            current_string = current_string..'\n'..res.spells[spell.name].en
-                            current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
+                            if ja_spells:contains(spell.name) then
+                                current_string = current_string..'\n'..ja_spells_names[spell.name][spell.tier]
+                                current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
+                            else
+                                current_string = current_string..'\n'..res.spells[spell.name].en
+                                current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
+                            end
                         else
                             debuff_table[effect] = nil
                         end
@@ -168,103 +236,107 @@ end
 
 function inc_action(act)
     if act.category == 4 then
-        if act.targets[1].actions[1].message == 2 or act.targets[1].actions[1].message == 252 then
-            if T{23,24,25,33,230,231,232}:contains(act.param) then
-                apply_dot(act.targets[1].id, act.param)
-            elseif helixes:contains(act.param) then
-                apply_helix(act.targets[1].id, act.param)
-            end
-        elseif T{236,237,268,271}:contains(act.targets[1].actions[1].message) then
-            local effect = act.targets[1].actions[1].param
-            local target = act.targets[1].id
-            local spell = act.param
+        for i, v in pairs(act.targets) do
+            if act.targets[1].actions[1].message == 2 or act.targets[1].actions[1].message == 252 then
+                if T{23,24,25,33,230,231,232}:contains(act.param) then
+                    apply_dot(act.targets[i].id, act.param)
+                elseif helixes:contains(act.param) then
+                    apply_helix(act.targets[i].id, act.param)
+                elseif ja_spells:contains(act.param) then
+                    apply_ja_spells(act.targets[i].id, act.param)
+                end
+            elseif T{236,237,268,271}:contains(act.targets[1].actions[1].message) then
+                local effect = act.targets[i].actions[i].param
+                local target = act.targets[i].id
+                local spell = act.param
             
-            if T{575}:contains(spell) then -- Jettatura
-                timers[spell] = os.clock() + 2
-            elseif T{112,252}:contains(spell) then -- flash and stun
-                timers[spell] = os.clock() + 12
-            elseif T{225,255,365,350,659,716,720,738,746}:contains(spell) then -- 30 secs spells durations
-                timers[spell] = os.clock() + 30
-            elseif T{376,463}:contains(spell) then -- horde and foe lullaby
-                timers[spell] = os.clock() + 45
-                if debuffed_mobs[target] and debuffed_mobs[target][2] then
-                    debuffed_mobs[target][2] = nil
+                if T{575}:contains(spell) then -- Jettatura
+                    timers[spell] = os.clock() + 2
+                elseif T{112,252}:contains(spell) then -- flash and stun
+                    timers[spell] = os.clock() + 12
+                elseif T{225,255,365,350,659,716,720,738,746}:contains(spell) then -- 30 secs spells durations
+                    timers[spell] = os.clock() + 30
+                elseif T{376,463}:contains(spell) then -- horde and foe lullaby
+                    timers[spell] = os.clock() + 45
+                    if debuffed_mobs[target] and debuffed_mobs[target][2] then
+                        debuffed_mobs[target][2] = nil
+                    end
+                elseif T{253,258,273,454,455,456,457,458,459,460,461,531,584,598,610,651,678,682,687,707,722,725}:contains(spell) then -- 1 min spells durations
+                    timers[spell] = os.clock() + 60
+                elseif T{220,259,274,871,872,873,874,875,876,877,878}:contains(spell) then -- 1 min 30 secs spells durations
+                    timers[spell] = os.clock() + 90
+                elseif T{377,471}:contains(spell) then -- horde and foe lullaby II
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][2] then
+                        debuffed_mobs[target][2] = nil
+                    end
+                elseif T{240,705}:contains(spell) then -- Drown overwrittes Burn
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][128] then
+                        debuffed_mobs[target][128] = nil
+                    end
+                elseif T{235,572,719}:contains(spell) then -- Burn overwrittes Frost
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][129] then
+                        debuffed_mobs[target][129] = nil
+                    end
+                elseif T{236,535}:contains(spell) then -- Frost overwrittes Choke
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][130] then
+                        debuffed_mobs[target][130] = nil
+                    end
+                elseif T{237}:contains(spell) then -- Choke overwrittes Rasp
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][131] then
+                        debuffed_mobs[target][131] = nil
+                    end
+                elseif T{238}:contains(spell) then -- Rasp overwrittes Shock
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][132] then
+                        debuffed_mobs[target][132] = nil
+                    end
+                elseif T{239}:contains(spell) then -- Shock overwrittes Drown
+                    timers[spell] = os.clock() + 90
+                    if debuffed_mobs[target] and debuffed_mobs[target][133] then
+                        debuffed_mobs[target][133] = nil
+                    end
+                elseif T{56,58,59,80,216,217,221,319,341,344,351,368,369,370,371,372,373,374,375,421,644,656,704,708,717,841,842,843,844}:contains(spell) then -- 2 min spells durations
+                    timers[spell] = os.clock() + 120
+                elseif T{882,883}:contains(spell) then -- 2 min 10 secs spells durations
+                    timers[spell] = os.clock() + 130
+                elseif T{79,254,276,286,347,348,422,508,524,699,703}:contains(spell) then -- 3 min spells durations
+                    timers[spell] = os.clock() + 180
+                elseif T{884}:contains(spell) then -- 3 min 10 secs spells durations
+                    timers[spell] = os.clock() + 190
+                    if debuffed_mobs[target] and debuffed_mobs[target][223] then
+                        debuffed_mobs[target][223] = nil
+                    end
+                elseif T{423,472}:contains(spell) then -- 4 min spells durations
+                    timers[spell] = os.clock() + 240
+                elseif T{345,726,727,728,879}:contains(spell) then -- 5 min spells durations
+                    timers[spell] = os.clock() + 300
                 end
-            elseif T{253,258,273,454,455,456,457,458,459,460,461,531,584,598,610,651,678,682,687,707,722,725}:contains(spell) then -- 1 min spells durations
-                timers[spell] = os.clock() + 60
-            elseif T{220,259,274,871,872,873,874,875,876,877,878}:contains(spell) then -- 1 min 30 secs spells durations
-                timers[spell] = os.clock() + 90
-            elseif T{377,471}:contains(spell) then -- horde and foe lullaby II
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][2] then
-                    debuffed_mobs[target][2] = nil
-                end
-            elseif T{240,705}:contains(spell) then -- Drown overwrittes Burn
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][128] then
-                    debuffed_mobs[target][128] = nil
-                end
-            elseif T{235,572,719}:contains(spell) then -- Burn overwrittes Frost
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][129] then
-                    debuffed_mobs[target][129] = nil
-                end
-            elseif T{236,535}:contains(spell) then -- Frost overwrittes Choke
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][130] then
-                    debuffed_mobs[target][130] = nil
-                end
-            elseif T{237}:contains(spell) then -- Choke overwrittes Rasp
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][131] then
-                    debuffed_mobs[target][131] = nil
-                end
-            elseif T{238}:contains(spell) then -- Rasp overwrittes Shock
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][132] then
-                    debuffed_mobs[target][132] = nil
-                end
-            elseif T{239}:contains(spell) then -- Shock overwrittes Drown
-                timers[spell] = os.clock() + 90
-                if debuffed_mobs[target] and debuffed_mobs[target][133] then
-                    debuffed_mobs[target][133] = nil
-                end
-            elseif T{56,58,59,80,216,217,221,319,341,344,351,368,369,370,371,372,373,374,375,421,644,656,704,708,717,841,842,843,844}:contains(spell) then -- 2 min spells durations
-                timers[spell] = os.clock() + 120
-            elseif T{882,883}:contains(spell) then -- 2 min 10 secs spells durations
-                timers[spell] = os.clock() + 130
-            elseif T{79,254,276,286,347,348,422,508,524,699,703}:contains(spell) then -- 3 min spells durations
-                timers[spell] = os.clock() + 180
-            elseif T{884}:contains(spell) then -- 3 min 10 secs spells durations
-                timers[spell] = os.clock() + 190
-                if debuffed_mobs[target] and debuffed_mobs[target][223] then
-                    debuffed_mobs[target][223] = nil
-                end
-            elseif T{423,472}:contains(spell) then -- 4 min spells durations
-                timers[spell] = os.clock() + 240
-            elseif T{345,726,727,728,879}:contains(spell) then -- 5 min spells durations
-                timers[spell] = os.clock() + 300
-            end
             
-            if not debuffed_mobs[target] then
-                debuffed_mobs[target] = {}
-            end
+                if not debuffed_mobs[target] then
+                    debuffed_mobs[target] = {}
+                end
 
-            if debuffs[effect] and debuffs[effect]:contains(spell) then
-                debuffed_mobs[target][effect] = spell
-            end
-        elseif T{329,330,331,332,333,334,335,533}:contains(act.targets[1].actions[1].message) then
-            local effect = act.param
-            local target = act.targets[1].id
-            local spell = act.param
-            timers[spell] = os.clock() + 215
+                if debuffs[effect] and debuffs[effect]:contains(spell) then
+                    debuffed_mobs[target][effect] = spell
+                end
+            elseif T{329,330,331,332,333,334,335,533}:contains(act.targets[1].actions[1].message) then
+                local effect = act.param
+                local target = act.targets[i].id
+                local spell = act.param
+                timers[spell] = os.clock() + 215
 
-            if not debuffed_mobs[target] then
-                debuffed_mobs[target] = {}
-            end
+                if not debuffed_mobs[target] then
+                    debuffed_mobs[target] = {}
+                end
 
-            if debuffs[effect] and tostring(debuffs[effect]):contains(spell) then
-                debuffed_mobs[target][effect] = spell
+                if debuffs[effect] and tostring(debuffs[effect]):contains(spell) then
+                    debuffed_mobs[target][effect] = spell
+                end
             end
         end
     elseif act.category == 1 and debuffed_mobs[act.actor] then

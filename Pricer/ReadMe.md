@@ -2,6 +2,9 @@
 
 Addon to browse the sales of an item in the www.ffxiah.com.
 
+WARNING: Due to ffxiah using https, pricer needs to add new libraries, you can find them in the Libraries folder,
+read the READ THIS.txt to know where those files needs to be placed.
+
 Pricer Commands:
 
 //price server_name default (set the default server to search)
