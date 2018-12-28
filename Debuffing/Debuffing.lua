@@ -237,7 +237,7 @@ end
 function inc_action(act)
     if act.category == 4 then
         for i, v in pairs(act.targets) do
-            if act.targets[1].actions[1].message == 2 or act.targets[1].actions[1].message == 252 then
+            if T{2,252,264,265}:contains(act.targets[i].actions[1].message) then
                 if T{23,24,25,33,230,231,232}:contains(act.param) then
                     apply_dot(act.targets[i].id, act.param)
                 elseif helixes:contains(act.param) then
@@ -245,8 +245,8 @@ function inc_action(act)
                 elseif ja_spells:contains(act.param) then
                     apply_ja_spells(act.targets[i].id, act.param)
                 end
-            elseif T{236,237,268,271}:contains(act.targets[1].actions[1].message) then
-                local effect = act.targets[i].actions[i].param
+            elseif T{236,237,266,267,268,269,270,271,272,277,278,279,280}:contains(act.targets[i].actions[1].message) then
+                local effect = act.targets[i].actions[1].param
                 local target = act.targets[i].id
                 local spell = act.param
             
