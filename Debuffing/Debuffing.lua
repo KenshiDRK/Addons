@@ -182,7 +182,9 @@ function apply_ja_spells(target, spell)
     
     local current = debuffed_mobs[target][1000]
     if current and current.name == spell then
-        ja_tier = current.tier + 1
+		if ja_tier < 5 then
+			ja_tier = current.tier + 1
+		end
     else
         ja_tier = 1
         ja_timer = os.clock() + 60
