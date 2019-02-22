@@ -4,7 +4,7 @@ The ssl.ddl needs to be at the \Windower4\plugins\libs folder
  - Full rute example: C:\Program Files (x86)\Windower4\plugins\libs\ssl.ddl
 
 The ssl.lua needs to be at the \Windower4\addons\libs folder
- - Full rute example: C:\Program Files (x86)\Windower4\plugins\addons\ssl.lua
+ - Full rute example: C:\Program Files (x86)\Windower4\addons\libs\ssl.lua
 
 the ssl folder with the https.lua needs to be at the \Windower4\addons\libs folder
- - Full rute example: C:\Program Files (x86)\Windower4\addons\addons\ssl\https.lua
+ - Full rute example: C:\Program Files (x86)\Windower4\addons\libs\ssl\https.lua
