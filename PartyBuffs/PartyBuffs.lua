@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '2.0'
+_addon.version = '3.0'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
@@ -34,11 +34,26 @@ packets = require('packets')
 config = require('config')
 require('pack')
 require('tables')
+require('filters')
 
 defaults = {}
 defaults.size = 10
+defaults.mode = 'blacklist'
 
 settings = config.load(defaults)
+
+aliases = T{
+    w            = 'whitelist',
+    wlist        = 'whitelist',
+    white        = 'whitelist',
+    whitelist    = 'whitelist',
+    b            = 'blacklist',
+    blist        = 'blacklist',
+    black        = 'blacklist',
+    blacklist    = 'blacklist'
+}
+
+alias_strs = aliases:keyset()
 
 local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
@@ -64,7 +79,9 @@ end
 
 local member_table = S{nil, nil, nil, nil, nil}
 
-local buffs = T{}
+buffs = T{}
+buffs['whitelist'] = {}
+buffs['blacklist'] = {}
 
 windower.register_event('incoming chunk', function(id, data)
     if id == 0x0DD then
@@ -74,32 +91,36 @@ windower.register_event('incoming chunk', function(id, data)
             member_table:append(packet['Name'])
             member_table[packet['Name']] = packet['ID']
         end
-        coroutine.schedule(Update, 0.5)
+        coroutine.schedule(buff_sort, 0.5)
     end
     
     if id == 0x076 then
         for  k = 0, 4 do
             local id = data:unpack('I', k*48+5)
-            buffs[id] = {}
+            buffs['whitelist'][id] = {}
+			buffs['blacklist'][id] = {}
             
             if id ~= 0 then
                 for i = 1, 32 do
                     local buff = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
-                    if buffs[id][i] ~= buff then
-                        buffs[id][i] = buff
+                    if buffs['whitelist'][id][i] ~= buff then
+                        buffs['whitelist'][id][i] = buff
+                    end
+					if buffs['blacklist'][id][i] ~= buff then
+                        buffs['blacklist'][id][i] = buff
                     end
                 end
             end
         end
-        Update()
+        buff_sort()
     end
     
     if id == 0xB then
         zoning_bool = true
-        Update()
+        buff_sort()
     elseif id == 0xA and zoning_bool then
         zoning_bool = false
-        coroutine.schedule(Update, 10)
+        coroutine.schedule(buff_sort, 10)
     end
 end)
 
@@ -110,7 +131,37 @@ for i = 2, 6 do
     party_buffs_y_pos[i] = y_pos - 20 * i
 end
 
-function Update()
+function buff_sort()
+    local player = windower.ffxi.get_player()
+    local party = windower.ffxi.get_party()
+    local key_indices = {'p1', 'p2', 'p3', 'p4', 'p5'}
+    
+    if not player then return end
+    
+    for k = 1, 5 do
+        local member = party[key_indices[k]]
+        for i = 1, 32 do
+            if member then
+                if buffs[settings.mode][member_table[member.name]] and buffs[settings.mode][member_table[member.name]][i] then
+                    if buffs[settings.mode][member_table[member.name]][i] == 255 then
+						buffs[settings.mode][member_table[member.name]][i] = 1000
+					elseif blacklist[player.name] and blacklist[player.name][player.main_job] and blacklist[player.name][player.main_job]:contains(buffs['blacklist'][member_table[member.name]][i]) then
+                        buffs['blacklist'][member_table[member.name]][i] = 1000
+                    elseif whitelist[player.name] and whitelist[player.name][player.main_job] and not whitelist[player.name][player.main_job]:contains(buffs['whitelist'][member_table[member.name]][i]) then
+                        buffs['whitelist'][member_table[member.name]][i] = 1000
+                    end
+                end
+            end
+        end
+        if member and buffs[settings.mode][member_table[member.name]] then
+			table.sort(buffs['blacklist'][member_table[member.name]])
+			table.sort(buffs['whitelist'][member_table[member.name]])
+		end
+    end
+	Update(buffs[settings.mode])
+end
+
+function Update(buff_table)
     local party_info = windower.ffxi.get_party_info()
     local zone = windower.ffxi.get_info().zone
     local party = windower.ffxi.get_party()
@@ -121,20 +172,16 @@ function Update()
         
         for image, i in party_buffs[k]:it() do
             if member then
-                if buffs[member_table[member.name]] and buffs[member_table[member.name]][i] then
-                    if zoning_bool then
-                        buffs[member_table[member.name]][i] = 0
+                if buff_table[member_table[member.name]] and buff_table[member_table[member.name]][i] then
+                    if zoning_bool or member.zone ~= zone or buff_table[member_table[member.name]][i] == 1000 then
+                        buff_table[member_table[member.name]][i] = 1000
                         image:clear()
                         image:hide()
-                    elseif member.zone ~= zone then
-                        buffs[member_table[member.name]][i] = 0
+                    elseif buff_table[member_table[member.name]][i] == 255 or buff_table[member_table[member.name]][i] == 0 then
                         image:clear()
                         image:hide()
-                    elseif buffs[member_table[member.name]][i] == 255 or buffs[member_table[member.name]][i] == 0 then
-                        image:clear()
-                        image:hide()
-                    else
-                        image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buffs[member_table[member.name]][i] .. '.png')
+                    else            
+                        image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff_table[member_table[member.name]][i] .. '.png')
                         image:transparency(0)
                         image:size(icon_size, icon_size)
                         -- Adjust position for party member count
@@ -154,7 +201,8 @@ function Update()
             end
             image:update()
         end
-    end  
+    end
+    
 end
 
 windower.register_event('load', function() --Create member table if addon is loaded while already in pt
@@ -177,8 +225,9 @@ end)
 
 windower.register_event('addon command', function(...)
     local args = T{...}
-    if args[1] then
-        if args[1]:lower() == 'size' then
+    local command = args[1] and args[1]:lower()
+    if command then
+        if command == 'size' then
             if not args[2] then
                 windower.add_to_chat(207,"Size not specified.")
             elseif args[2] == '10' then
@@ -188,7 +237,7 @@ windower.register_event('addon command', function(...)
                     settings.size = 10
                     icon_size = 10
                     settings:save()
-                    Update()
+                    buff_sort()
                     windower.add_to_chat(207,'Icons size set to 10x10.')
                 end
             elseif args[2] == '20' then
@@ -198,18 +247,38 @@ windower.register_event('addon command', function(...)
                     settings.size = 20
                     icon_size = 20
                     settings:save()
-                    Update()
+                    buff_sort()
                     windower.add_to_chat(207,'Icons size set to 20x20.')
                 end
             else
                 windower.add_to_chat(207,'Icons size has to be 10 or 20.')
             end
-        elseif args[1]:lower() == 'help' then
+        elseif command == 'mode' then
+            -- If no mode provided, print status.
+            local mode = args[2] or 'status'
+            if alias_strs:contains(mode) then
+                if mode == settings.mode then
+                    windower.add_to_chat(207,'Mode is already in ' .. mode .. ' mode.')
+                else
+                    settings.mode = aliases[mode]
+                    windower.add_to_chat(207,'Mode switched to ' .. settings.mode .. '.')
+                    settings:save()
+                    buff_sort()
+                end
+            elseif mode == 'status' then
+                windower.add_to_chat(207,'Currently in ' .. settings.mode .. ' mode.')
+            else
+                windower.add_to_chat(207,'Invalid mode:', args[1])
+                return
+            end
+        elseif command == 'help' then
             windower.add_to_chat(207,"Partybuffs Commands:")
             windower.add_to_chat(207,"//pb|partybuffs size 10 (sets the icon size to 10x10)")
             windower.add_to_chat(207,"//pb|partybuffs size 20 (sets the icon size to 20x20)")
+            windower.add_to_chat(207,"//pb|partybuffs mode w|wlist|white|whitelist (sets whitelist mode) ")
+            windower.add_to_chat(207,"//pb|partybuffs mode b|blist|black|blacklist (sets blacklist mode) ")
         end
     else
-        windower.add_to_chat(207,"First argument not specified, use size or help.")
+        windower.add_to_chat(207,"First argument not specified, use size, mode or help.")
     end
 end)
