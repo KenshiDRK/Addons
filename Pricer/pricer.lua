@@ -59,7 +59,7 @@ function get_sales(item,stack)
 	local header = {}
 	header['cookie'] = temp_header or servers[settings.server] or servers[defaults.server]
 	local result_table = {};
-		https.request{
+	https.request{
 		url = "https://www.ffxiah.com/item/"..item..stack,
 		sink = ltn12.sink.table(result_table),
 		headers = header
@@ -158,9 +158,9 @@ function comma_value(n)
 end
 
 function get_item_id(name)
-local result = nil 
+local result = nil
  for i,v in pairs(res.items) do
-	if string.lower(v.name) == string.lower(name) or string.lower(v.enl) == string.lower(name) then
+	if string.lower(v.name) == string.lower(name) or string.lower(v.enl) == string.lower(name) or string.lower(v.id) == string.lower(name) then
 	 result = v.id
 	end
  end
@@ -200,12 +200,17 @@ windower.register_event('addon command', function(...)
             else
                 for i,v in pairs(args) do args[i]=windower.convert_auto_trans(args[i]) end
                 local item = table.concat(args," ",2):lower()
-                temp_header = servers[args[1]:lower()]
+                local item2 = table.concat(args," ",1):lower()
                 local stack = ""
                 
                 local id = get_item_id(item)
+                local id2 = get_item_id(item2)
                 if id then
+                    temp_header = servers[args[1]:lower()]
                     get_sales(id,stack)
+                elseif id2 then
+                    temp_header = servers[settings.server:lower()]
+                    get_sales(id2,stack)
                 else
                     windower.add_to_chat(207,"Item Not Found or wrong command use '//price help' for info.")
                 end
@@ -232,7 +237,7 @@ windower.register_event('addon command', function(...)
         else
             for i,v in pairs(args) do args[i]=windower.convert_auto_trans(args[i]) end
                 local item = table.concat(args," "):lower()
-                temp_header = servers[args[1]:lower()]
+                temp_header = servers[settings.server:lower()]
                 local stack = ""
                 
                 local id = get_item_id(item)
