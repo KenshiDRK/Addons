@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.4'
+_addon.version = '1.5'
 
 require('luau')
 packets = require('packets')
@@ -28,10 +28,12 @@ debuffed_mobs = {}
 
 helixes = S{278,279,280,281,282,283,284,285,
     885,886,887,888,889,890,891,892}
-    
+
 ja_spells = S{496,497,498,499,500,501}
 
-erase_abilities = S{2571, 2714, 2718, 2775}
+step_duration = {}
+
+erase_abilities = S{2370, 2571, 2714, 2718, 2775, 2831}
 
 partial_erase_abilities = S{1245, 1273}
 
@@ -210,7 +212,10 @@ function update_box()
                 if spell then
                     if type(spell) == 'table' then
                         if (spell.timer - os.clock()) >= 0 then
-                            if ja_spells:contains(spell.name) then
+                            if T{201,202,203,312}:contains(effect) then
+                                current_string = current_string..'\n'..spell.name
+                                current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
+                            elseif ja_spells:contains(spell.name) then
                                 current_string = current_string..'\n'..ja_spells_names[spell.name][spell.tier]
                                 current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
                             else
@@ -225,7 +230,7 @@ function update_box()
                     end
                 end
             end
-        end     
+        end
     end
 
     box.current_string = current_string
@@ -354,6 +359,28 @@ function inc_action(act)
 				end
 			end
 		end
+    elseif act.category == 14 then
+        for i, v in pairs(act.targets) do
+            if T{519,520,521,591}:contains(act.targets[i].actions[1].message) then
+                local effect = act.param
+                local target = act.targets[i].id
+                local tier = act.targets[i].actions[1].param
+                
+                if tier == 1 then
+                    step_duration[effect] = os.clock() + 60
+                elseif step_duration[effect] - os.clock() >= 90 then
+                    step_duration[effect] = os.clock() + 120
+                else
+                    step_duration[effect] = step_duration[effect] + 30
+                end
+                
+                if not debuffed_mobs[target] then
+                    debuffed_mobs[target] = {}
+                end
+                
+                debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[effect]}
+            end  
+        end
     elseif act.category == 1 and debuffed_mobs[act.actor] then
         if debuffed_mobs[act.actor][2] then
             debuffed_mobs[act.actor][2] = nil
@@ -395,6 +422,18 @@ function inc_action_message(arr)
                 elseif arr.param_1 == 146 then
                     debuffed_mobs[arr.target_id][arr.param_1] = nil
                     debuffed_mobs[arr.target_id][242] = nil
+                elseif T{386,387,388,389,390}:contains(arr.param_1) then
+                    debuffed_mobs[arr.target_id][201] = nil
+                    step_duration[201] = 0
+                elseif T{391,392,393,394,395}:contains(arr.param_1) then
+                    debuffed_mobs[arr.target_id][202] = nil
+                    step_duration[202] = 0
+                elseif T{396,397,398,399,400}:contains(arr.param_1) then
+                    debuffed_mobs[arr.target_id][203] = nil
+                    step_duration[203] = 0
+                elseif T{448,449,450,451,452}:contains(arr.param_1) then
+                    debuffed_mobs[arr.target_id][312] = nil
+                    step_duration[312] = 0
                 else
                     debuffed_mobs[arr.target_id][arr.param_1] = nil
                 end
