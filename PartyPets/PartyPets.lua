@@ -64,7 +64,7 @@ end
 
 local function TP_col(name, index, tp, line_col)
     local TP = tp >= 1000 and ' [\\cr\\cs(128,255,128)'..tp..'\\cr'..line_col..']' or ' ['..tp..']'
-    local TP_col = name ~= 'Luopan' and player_name == pet_table[index].O_Name and TP or ''
+    local TP_col = name ~= 'Luopan' and pet_table[index] and player_name == pet_table[index].O_Name and TP or ''
     return TP_col
 end
 
@@ -176,7 +176,7 @@ windower.register_event('incoming chunk', function(id, data)
     elseif id == 0x00E then
         local packet = packets.parse('incoming', data)
         if packet['Index'] < 1024 then return end
-        if pet_table[packet['Index']] then
+        if pet_table:contains(packet['Index']) then
             local hp_update = string.sub(packet['Mask']:binary(),-3,-3)
             local name_update = string.sub(packet['Mask']:binary(),-4,-4)
             local despawn = string.sub(packet['Mask']:binary(),-6,-6)
@@ -217,13 +217,17 @@ windower.register_event('incoming chunk', function(id, data)
                 pets[Owner_Name].Pet.Out_of_Range = false
             end
             pets[Owner_Name].Pet.Pet_Index = packet['Pet Index']
-            if not pet_table[packet['Pet Index']] then
-                pet_table:append(packet['Pet Index'])
-            end
-            pet_table[packet['Pet Index']] = {Owner_Index = packet['Owner Index'], O_Name = Owner_Name}
-            if player_name == Owner_Name and id == 0x068 then
-                pets[Owner_Name].Pet.Pet_TP = packet['Pet TP']
-                pets[Owner_Name].Pet_HPP = packet['Current HP%']
+            if id == 0x068 then
+                if not pet_table[packet['Pet Index']] then
+                    pet_table:append(packet['Pet Index'])
+                    pet_table[packet['Pet Index']] = {Owner_Index = packet['Owner Index'], O_Name = Owner_Name}
+                else
+                    pet_table[packet['Pet Index']] = {Owner_Index = packet['Owner Index'], O_Name = Owner_Name}
+                end
+                if player_name == Owner_Name and id == 0x068 then
+                    pets[Owner_Name].Pet.Pet_TP = packet['Pet TP']
+                    pets[Owner_Name].Pet_HPP = packet['Current HP%']
+                end
             end
         end
     elseif id == 0x0DF then
