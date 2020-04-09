@@ -36,10 +36,21 @@ box = texts.new('${current_string}', settings)
 box:show()
 
 local pets = T{}
-local member_table = T{}
-local pet_table = T{}
 local player_name
-local player_id
+
+local function GetMemberName(index)
+    for i, v in pairs(pets) do
+        if v then
+            if pets[i].Owner_Index and pets[i].Owner_Index == index then
+                return pets[i].Owner_Name
+            elseif pets[i].Pet and pets[i].Pet.Index and pets[i].Pet.Index == index then
+                return pets[i].Owner_Name
+            elseif pets[i].Fellow and pets[i].Fellow.Index and pets[i].Fellow.Index == index then
+                return pets[i].Owner_Name
+            end
+        end
+    end
+end
 
 local function hp_col(hpp)
     local hp_col
@@ -63,8 +74,9 @@ local function line_col(member, player)
 end
 
 local function TP_col(name, index, tp, line_col)
+    local member_name = GetMemberName(index)
     local TP = tp >= 1000 and ' [\\cr\\cs(128,255,128)'..tp..'\\cr'..line_col..']' or ' ['..tp..']'
-    local TP_col = name ~= 'Luopan' and pet_table[index] and player_name == pet_table[index].O_Name and TP or ''
+    local TP_col = name ~= 'Luopan' and player_name == member_name and TP or ''
     return TP_col
 end
 
@@ -84,30 +96,48 @@ local function Update()
     current_string = 'Party Pets:'
     for k = 1, 18 do
         local member = party[key_indices[k]]
-        if member and pets and pets[member.name] and pets[member.name].Pet.Pet_Index and pets[member.name].Pet.Pet_Name then
-            local line_c = line_col(member.name, player_name)
-            local pet_name = pets[member.name].Pet.Pet_Name
-            local owner_name = pets[member.name].Owner_Name
-            local hpp = pets[member.name].Pet_HPP
-            local tp = pets[member.name].Pet.Pet_TP
-            local pet_index = pets[member.name].Pet.Pet_Index
-            local hp_color = hp_col(hpp)
-            local tp_color = TP_col(pet_name, pet_index, tp, line_c)
-            current_string = current_string..'\n'..line_c..pet_name..' ['..owner_name..']:'
-            if pets[member.name].Pet.Pet_Dead and hpp == 0 then
-                current_string = current_string..' [\\cr\\cs(169,169,169)Dead\\cr'..line_c..']'
-            elseif pets[member.name].Pet.Out_of_Range then
-                current_string = current_string..' [\\cr\\cs(255,0,0)Out of Range\\cr'..line_c..']'
-            elseif pets[member.name].Pet.Pet_is_Automaton then
-                local m_hp = pets[member.name].Pet.m_hp
-                local c_hp = hpp == 0 and 0 or pets[member.name].Pet.c_hp
-                local c_mp = pets[member.name].Pet.c_mp
-                local m_mp = pets[member.name].Pet.m_mp
-                local mpp = c_mp * 100 / m_mp
-                local mp_color = hp_col(mpp)
-                current_string = current_string..' '..hp_color..c_hp..line_c..'/'..m_hp..' ['..hp_color..hpp..'%'..line_c..'] '..mp_color..c_mp..line_c..'/'..m_mp..tp_color..pet_dist(pet_index)
-            else
-                current_string = current_string..' ['..hp_color..hpp..'%\\cr'..line_c..']'..tp_color..pet_dist(pet_index)
+        if member and pets and pets[member.name] then
+            if pets[member.name].Pet.Index and pets[member.name].Pet.Name then
+                local line_c = line_col(member.name, player_name)
+                local pet_name = pets[member.name].Pet.Name
+                local owner_name = pets[member.name].Owner_Name
+                local hpp = pets[member.name].Pet.HPP
+                local tp = pets[member.name].Pet.TP
+                local pet_index = pets[member.name].Pet.Index
+                local hp_color = hp_col(hpp)
+                local tp_color = TP_col(pet_name, pet_index, tp, line_c)
+                current_string = current_string..'\n'..line_c..pet_name..' ['..owner_name..']:'
+                if pets[member.name].Pet.Dead and hpp == 0 then
+                    current_string = current_string..' [\\cr\\cs(169,169,169)Dead\\cr'..line_c..']'
+                elseif pets[member.name].Pet.Out_of_Range then
+                    current_string = current_string..' [\\cr\\cs(255,0,0)Out of Range\\cr'..line_c..']'
+                elseif pets[member.name].Pet.Pet_is_Automaton then
+                    local m_hp = pets[member.name].Pet.m_hp
+                    local c_hp = hpp == 0 and 0 or pets[member.name].Pet.c_hp
+                    local c_mp = pets[member.name].Pet.c_mp
+                    local m_mp = pets[member.name].Pet.m_mp
+                    local mpp = c_mp * 100 / m_mp
+                    local mp_color = hp_col(mpp)
+                    current_string = current_string..' '..hp_color..c_hp..line_c..'/'..m_hp..' ['..hp_color..hpp..'%'..line_c..'] '..mp_color..c_mp..line_c..'/'..m_mp..tp_color..pet_dist(pet_index)
+                else
+                    current_string = current_string..' ['..hp_color..hpp..'%\\cr'..line_c..']'..tp_color..pet_dist(pet_index)
+                end
+            end
+            if pets[member.name].Fellow.Index and pets[member.name].Fellow.Name then
+                local line_c = line_col(member.name, player_name)
+                local fellow_name = pets[member.name].Fellow.Name
+                local owner_name = pets[member.name].Owner_Name
+                local hpp = pets[member.name].Fellow.HPP
+                local fellow_index = pets[member.name].Fellow.Index
+                local hp_color = hp_col(hpp)
+                current_string = current_string..'\n'..line_c..fellow_name..' ['..owner_name..']:'
+                if pets[member.name].Fellow.Dead and hpp == 0 then
+                    current_string = current_string..' [\\cr\\cs(169,169,169)Dead\\cr'..line_c..']'
+                elseif pets[member.name].Fellow.Out_of_Range then
+                    current_string = current_string..' [\\cr\\cs(255,0,0)Out of Range\\cr'..line_c..']'
+                else
+                    current_string = current_string..' ['..hp_color..hpp..'%\\cr'..line_c..']'..pet_dist(fellow_index)
+                end
             end
         end
         box:show()
@@ -129,16 +159,17 @@ local function create_members_table()
         
         if member and member.mob then
             local member_pet = member.mob.pet_index and windower.ffxi.get_mob_by_index(member.mob.pet_index) or nil
-            if not member.mob.is_npc and not member_table:contains(member.mob.index) then
-                member_table:append(member.mob.index)
-                member_table[member.mob.index] = {Member_Name = member.name}
-                pets[member.name] = {Owner_Index = member.mob.index, Owner_Name = member.name, Pet_HPP = member_pet and member_pet.hpp or 100,
-                Pet = {Pet_TP = 0}}
-                if member_pet and not pet_table:contains(member_pet.index) then
-                    pet_table:append(member_pet.index)
-                    pet_table[member_pet.index] = {Owner_Index = member.mob.index, O_Name = member.name}
-                    pets[member.name].Pet = {Pet_Name = member_pet.name, Pet_Index = member_pet.index,
-                    Pet_TP = 0, Pet_Dead = false, Out_of_Range = false, Pet_is_Automaton = false}
+            local member_fellow = member.mob.fellow_index and windower.ffxi.get_mob_by_index(member.mob.fellow_index) or nil
+            if not member.mob.is_npc then
+                pets[member.name] = {Owner_Index = member.mob.index, Owner_Name = member.name,
+                Pet = {HPP = 100, TP = 0}, Fellow = {HPP = 100, TP = 0}}
+                if member_pet then
+                    pets[member.name].Pet = {Name = member_pet.name, Index = member_pet.index, HPP = member_pet.hpp,
+                    TP = 0, Dead = false, Out_of_Range = false, Pet_is_Automaton = false}
+                end
+                if member_fellow then
+                    pets[member.name].Fellow = {Name = member_fellow.name, Index = member_fellow.index, HPP = member_fellow.hpp,
+                    TP = 0, Dead = false, Out_of_Range = false}
                 end
             end
         end
@@ -146,100 +177,142 @@ local function create_members_table()
     Update()
 end
 
-local function clear_table()
-    local party = windower.ffxi.get_party()
-    local key_indices = {'p0','p1', 'p2', 'p3', 'p4', 'p5', 'a10', 'a11', 'a12', 'a13', 'a14', 'a15', 'a20', 'a21', 'a22', 'a23', 'a24', 'a25'}
-    local _player = windower.ffxi.get_mob_by_target('me')
-    for k = 1, 18 do
-        local member = party[key_indices[k]]
-        if member and pets[member.name] then
-            pets[member.name].Pet = {Pet_TP = 0}
-        end
-    end
-    member_table = T{}
-    pet_table = T{}
-end
-
 windower.register_event('load', 'login', function() --Create member table if addon is loaded while already in pt
     create_members_table()
 end)
+
+local function CheckPet(index)
+    for i, v in pairs(pets) do
+        if v then
+            if pets[i].Pet.Index and pets[i].Pet.Index == index then
+                return true
+            elseif pets[i].Fellow.Index and pets[i].Fellow.Index == index then
+                return true
+            end
+        end
+    end
+end
+
+local function CheckMember(index)
+    for i, v in pairs(pets) do
+        if v and pets[i].Owner_Index and pets[i].Owner_Index == index then
+            return true
+        end
+    end
+end
+
+local function GetMemberIndex(index)
+    for i, v in pairs(pets) do
+        if v then
+            if pets[i].Pet and pets[i].Pet.Index and pets[i].Pet.Index == index then
+                return pets[i].Owner_Index
+            elseif pets[i].Fellow and pets[i].Fellow.Index and pets[i].Fellow.Index == index then
+                return pets[i].Owner_Index
+            end
+        end
+    end
+end
+
+local function CheckNoTrust(name, index)
+    coroutine.sleep(0.5)
+    local mob = windower.ffxi.get_mob_by_index(index)
+    if not mob then return end
+    if mob.spawn_type == 2 then
+        if mob.race == 0 then
+            pets[name].Pet.Index = index
+        else
+            pets[name].Fellow.Index = index
+            pets[name].Fellow.Dead = false
+            pets[name].Fellow.Out_of_Range = false
+            pets[name].Fellow.Name = mob.name
+        end
+    end
+end
 
 windower.register_event('incoming chunk', function(id, data)
     if id == 0x0DD then
         local packet = packets.parse('incoming', data)
         
-        if not member_table:contains(packet['Index']) then
-            member_table:append(packet['Index'])
-            member_table[packet['Index']] = {Member_Name = packet['Name']}
-            pets[packet['Name']] = {Owner_Index = packet['Index'], Owner_Name = packet['Name'], Pet_HPP = 100, Pet = {Pet_TP = 0}}
+        if not pets[packet['Name']] then
+            pets[packet['Name']] = {}
+            pets[packet['Name']].Pet = {}
+            pets[packet['Name']].Pet.HPP = 100
+            pets[packet['Name']].Pet.TP = 0
+            pets[packet['Name']].Fellow = {}
+            pets[packet['Name']].Fellow.HPP = 100
+            pets[packet['Name']].Fellow.TP = 0
         end
+        pets[packet['Name']].Owner_Index = packet['Index']
+        pets[packet['Name']].Owner_Name = packet['Name']
     elseif id == 0x00E then
         local packet = packets.parse('incoming', data)
         if packet['Index'] < 1024 then return end
-        if pet_table:contains(packet['Index']) then
+        if CheckPet(packet['Index']) then
             local hp_update = string.sub(packet['Mask']:binary(),-3,-3)
             local name_update = string.sub(packet['Mask']:binary(),-4,-4)
+            local fellow = string.sub(packet['Mask']:binary(),-5,-5)
             local despawn = string.sub(packet['Mask']:binary(),-6,-6)
-            local owner = pet_table[packet['Index']].O_Name
+            local owner = GetMemberName(packet['Index'])
+            local fellow_var = fellow == '1' and 'Fellow' or 'Pet'
             if despawn == '1' then
-                local pet_owner = windower.ffxi.get_mob_by_index(pet_table[packet['Index']].Owner_Index)
-                pets[owner].Pet.Pet_Dead = (pets[owner].Pet_HPP == 0 or (pet_owner and not pet_owner.pet_index)) and true
-                pets[owner].Pet.Out_of_Range = pets[owner].Pet_HPP > 0 and true
-                pets[owner].Pet_HPP = 0
+                local pet_owner = windower.ffxi.get_mob_by_index(GetMemberIndex(packet['Index']))
+                pets[owner][fellow_var].Dead = (pets[owner][fellow_var].HPP == 0 or (pet_owner and not pet_owner.pet_index)) and true
+                pets[owner][fellow_var].Out_of_Range = pets[owner][fellow_var].HPP > 0 and true
             end
             if hp_update == '1' then
-                pets[owner].Pet_HPP = packet['HP %']
+                pets[owner][fellow_var].HPP = packet['HP %']
                 if packet['HP %'] > 0 then
-                    pets[owner].Pet.Pet_Dead = false
-                    pets[owner].Pet.Out_of_Range = false
+                    pets[owner][fellow_var].Dead = false
+                    pets[owner][fellow_var].Out_of_Range = false
                 end
             end
             if name_update == '1' then
-                pets[owner].Pet.Pet_Name = packet['Name']
+                pets[owner][fellow_var].Name = packet['Name']
             end
         end
     elseif id == 0x044 then
         local packet = packets.parse('incoming', data)
         if packet['Job'] ~= 18 or packet['Subjob'] then return end
-        if not pets[player_name].Pet_HPP then return end
-        pets[player_name].Pet.Pet_Name = packet['Pet Name']
+        if not pets[player_name].Pet.HPP then return end
+        pets[player_name].Pet.Name = packet['Pet Name']
         pets[player_name].Pet.Pet_is_Automaton = true
-        pets[player_name].Pet.c_hp = pets[player_name].Pet_HPP == 0 and 0 or packet['Current HP']
+        pets[player_name].Pet.c_hp = pets[player_name].Pet.Pet_HPP == 0 and 0 or packet['Current HP']
         pets[player_name].Pet.m_hp = packet['Max HP']
         pets[player_name].Pet.c_mp = packet['Current MP']
         pets[player_name].Pet.m_mp = packet['Max MP']
     elseif id == 0x067 or id == 0x068 then
         local packet = packets.parse('incoming', data)
-        if packet['Pet Index'] > 1024 and packet['Owner Index'] > 0 and member_table[packet['Owner Index']] then
-            local Owner_Name = member_table[packet['Owner Index']].Member_Name
+        if packet['Pet Index'] > 1024 and packet['Owner Index'] > 0 and CheckMember(packet['Owner Index']) then
+            local Owner_Name = GetMemberName(packet['Owner Index'])
             if packet['Current HP%'] > 0 then
-                pets[Owner_Name].Pet.Pet_Dead = false
+                pets[Owner_Name].Pet.Dead = false
                 pets[Owner_Name].Pet.Out_of_Range = false
             end
-            pets[Owner_Name].Pet.Pet_Index = packet['Pet Index']
             if id == 0x068 then
-                if not pet_table[packet['Pet Index']] then
-                    pet_table:append(packet['Pet Index'])
-                    pet_table[packet['Pet Index']] = {Owner_Index = packet['Owner Index'], O_Name = Owner_Name}
-                else
-                    pet_table[packet['Pet Index']] = {Owner_Index = packet['Owner Index'], O_Name = Owner_Name}
+                pets[Owner_Name].Owner_Index = packet['Owner Index']
+                pets[Owner_Name].Owner_Name = Owner_Name
+                if player_name == Owner_Name then
+                    pets[Owner_Name].Pet.TP = packet['Pet TP']
+                    pets[Owner_Name].Pet.HPP = packet['Current HP%']
                 end
-                if player_name == Owner_Name and id == 0x068 then
-                    pets[Owner_Name].Pet.Pet_TP = packet['Pet TP']
-                    pets[Owner_Name].Pet_HPP = packet['Current HP%']
-                end
+            else
+                CheckNoTrust(Owner_Name, packet['Pet Index'])
             end
-        end
-    elseif id == 0x0DF then
-        local packet = packets.parse('incoming', data)
-        if not member_table:contains(packet['Index']) then
-            member_table:append(packet['Index'])
-            member_table[packet['Index']] = {Member_Name = player_name}
         end
     elseif id == 0xB then
         zoning_bool = true
-        clear_table()
+        pets = {}
     elseif id == 0xA and zoning_bool then
+        local packet = packets.parse('incoming', data)
+        pets[player_name] = {}
+        pets[player_name].Owner_Index = packet['Player Index']
+        pets[player_name].Owner_Name = player_name
+        pets[player_name].Pet = {}
+        pets[player_name].Pet.HPP = 100
+        pets[player_name].Pet.TP = 0
+        pets[player_name].Fellow = {}
+        pets[player_name].Fellow.HPP = 100
+        pets[player_name].Fellow.TP = 0
         zoning_bool = false
     end
 end)
