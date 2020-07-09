@@ -1,6 +1,6 @@
 _addon.name = 'PartyPets'
 _addon.author = 'Kenshi'
-_addon.version = '1.0'
+_addon.version = '1.1'
 
 require('luau')
 texts = require('texts')
@@ -69,7 +69,7 @@ local function hp_col(hpp)
 end
 
 local function line_col(member, player)
-    local line_col = member == player and '\\cr\\cs(150,255,255)' or ''
+    local line_col = member == player and '\\cr\\cs(150,255,255)' or '\\cr\\cs(255,255,255)'
     return line_col
 end
 
@@ -139,8 +139,8 @@ local function Update()
                     current_string = current_string..' ['..hp_color..hpp..'%\\cr'..line_c..']'..pet_dist(fellow_index)
                 end
             end
+            box:show()
         end
-        box:show()
     end
     if current_string == '' or current_string == 'Party Pets:' then
         box:hide()
@@ -214,7 +214,7 @@ local function GetMemberIndex(index)
 end
 
 local function CheckNoTrust(name, index)
-    coroutine.sleep(0.5)
+    coroutine.sleep(0.7)
     local mob = windower.ffxi.get_mob_by_index(index)
     if not mob then return end
     if mob.spawn_type == 2 then
