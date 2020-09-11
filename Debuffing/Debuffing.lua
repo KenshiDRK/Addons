@@ -366,7 +366,7 @@ function inc_action(act)
                 local target = act.targets[i].id
                 local tier = act.targets[i].actions[1].param
                 
-                if tier == 1 then
+                if tier == 1 or not step_duration[effect] then
                     step_duration[effect] = os.clock() + 60
                 elseif step_duration[effect] - os.clock() >= 90 then
                     step_duration[effect] = os.clock() + 120
@@ -379,7 +379,7 @@ function inc_action(act)
                 end
                 
                 debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[effect]}
-            end  
+            end
         end
     elseif act.category == 1 and debuffed_mobs[act.actor] then
         if debuffed_mobs[act.actor][2] then

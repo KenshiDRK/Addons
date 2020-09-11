@@ -273,7 +273,7 @@ windower.register_event('incoming chunk', function(id, data)
     elseif id == 0x044 then
         local packet = packets.parse('incoming', data)
         if packet['Job'] ~= 18 or packet['Subjob'] then return end
-        if not pets[player_name].Pet.HPP then return end
+        if not pets[player_name] or not pets[player_name].Pet or not pets[player_name].Pet.HPP then return end
         pets[player_name].Pet.Name = packet['Pet Name']
         pets[player_name].Pet.Pet_is_Automaton = true
         pets[player_name].Pet.c_hp = pets[player_name].Pet.Pet_HPP == 0 and 0 or packet['Current HP']
@@ -282,21 +282,31 @@ windower.register_event('incoming chunk', function(id, data)
         pets[player_name].Pet.m_mp = packet['Max MP']
     elseif id == 0x067 or id == 0x068 then
         local packet = packets.parse('incoming', data)
-        if packet['Pet Index'] > 1024 and packet['Owner Index'] > 0 and CheckMember(packet['Owner Index']) then
-            local Owner_Name = GetMemberName(packet['Owner Index'])
-            if packet['Current HP%'] > 0 then
-                pets[Owner_Name].Pet.Dead = false
-                pets[Owner_Name].Pet.Out_of_Range = false
-            end
-            if id == 0x068 then
-                pets[Owner_Name].Owner_Index = packet['Owner Index']
-                pets[Owner_Name].Owner_Name = Owner_Name
-                if player_name == Owner_Name then
-                    pets[Owner_Name].Pet.TP = packet['Pet TP']
-                    pets[Owner_Name].Pet.HPP = packet['Current HP%']
+        if packet['Owner Index'] > 0 and CheckMember(packet['Owner Index']) then
+            if packet['Pet Index'] > 0 then
+                local Owner_Name = GetMemberName(packet['Owner Index'])
+                if packet['Current HP%'] > 0 then
+                    pets[Owner_Name].Pet.Dead = false
+                    pets[Owner_Name].Pet.Out_of_Range = false
                 end
-            else
-                CheckNoTrust(Owner_Name, packet['Pet Index'])
+                if id == 0x068 then
+                    pets[Owner_Name].Owner_Index = packet['Owner Index']
+                    pets[Owner_Name].Owner_Name = Owner_Name
+                    if player_name == Owner_Name then
+                        pets[Owner_Name].Pet.TP = packet['Pet TP']
+                        pets[Owner_Name].Pet.HPP = packet['Current HP%']
+                        if packet['Message Type'] == 4 then
+                            pets[Owner_Name].Pet.Name = packet['Pet Name']
+                            pets[Owner_Name].Pet.Index = packet['Pet Index']
+                        end
+                    end
+                else
+                    CheckNoTrust(Owner_Name, packet['Pet Index'])
+                end
+            elseif pets[player_name].Pet and pets[player_name].Pet.Index and pets[player_name].Pet.Index < 1024 then
+                pets[player_name].Pet = {}
+                pets[player_name].Pet.HPP = 100
+                pets[player_name].Pet.TP = 0
             end
         end
     elseif id == 0xB then
