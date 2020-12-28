@@ -1,4 +1,4 @@
---[[Copyright © 2017, Kenshi
+--[[Copyright © 2020, Kenshi
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '3.0'
+_addon.version = '3.1'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
@@ -58,8 +58,8 @@ alias_strs = aliases:keyset()
 local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
 
+local x_pos = windower.get_windower_settings().ui_x_res - 190
 do
-    local x_pos = windower.get_windower_settings().ui_x_res - 190
     for k = 1, 5 do
         party_buffs[k] = T{}
         
@@ -95,24 +95,7 @@ windower.register_event('incoming chunk', function(id, data)
     end
     
     if id == 0x076 then
-        for  k = 0, 4 do
-            local id = data:unpack('I', k*48+5)
-            buffs['whitelist'][id] = {}
-			buffs['blacklist'][id] = {}
-            
-            if id ~= 0 then
-                for i = 1, 32 do
-                    local buff = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
-                    if buffs['whitelist'][id][i] ~= buff then
-                        buffs['whitelist'][id][i] = buff
-                    end
-					if buffs['blacklist'][id][i] ~= buff then
-                        buffs['blacklist'][id][i] = buff
-                    end
-                end
-            end
-        end
-        buff_sort()
+        parse_buffs(data)
     end
     
     if id == 0xB then
@@ -124,7 +107,27 @@ windower.register_event('incoming chunk', function(id, data)
     end
 end)
 
-local x_pos = windower.get_windower_settings().ui_x_res - 190
+function parse_buffs(data)
+    for  k = 0, 4 do
+        local id = data:unpack('I', k*48+5)
+        buffs['whitelist'][id] = {}
+        buffs['blacklist'][id] = {}
+        
+        if id ~= 0 then
+            for i = 1, 32 do
+                local buff = data:byte(k*48+5+16+i-1) + 256*( math.floor( data:byte(k*48+5+8+ math.floor((i-1)/4)) / 4^((i-1)%4) )%4) -- Credit: Byrth, GearSwap
+                if buffs['whitelist'][id][i] ~= buff then
+                    buffs['whitelist'][id][i] = buff
+                end
+                if buffs['blacklist'][id][i] ~= buff then
+                    buffs['blacklist'][id][i] = buff
+                end
+            end
+        end
+    end
+    buff_sort()
+end
+
 local party_buffs_y_pos = {}
 for i = 2, 6 do
     local y_pos = windower.get_windower_settings().ui_y_res - 5
@@ -144,8 +147,8 @@ function buff_sort()
             if member then
                 if buffs[settings.mode][member_table[member.name]] and buffs[settings.mode][member_table[member.name]][i] then
                     if buffs[settings.mode][member_table[member.name]][i] == 255 then
-						buffs[settings.mode][member_table[member.name]][i] = 1000
-					elseif blacklist[player.name] and blacklist[player.name][player.main_job] and blacklist[player.name][player.main_job]:contains(buffs['blacklist'][member_table[member.name]][i]) then
+                        buffs[settings.mode][member_table[member.name]][i] = 1000
+                    elseif blacklist[player.name] and blacklist[player.name][player.main_job] and blacklist[player.name][player.main_job]:contains(buffs['blacklist'][member_table[member.name]][i]) then
                         buffs['blacklist'][member_table[member.name]][i] = 1000
                     elseif whitelist[player.name] and whitelist[player.name][player.main_job] and not whitelist[player.name][player.main_job]:contains(buffs['whitelist'][member_table[member.name]][i]) then
                         buffs['whitelist'][member_table[member.name]][i] = 1000
@@ -154,11 +157,11 @@ function buff_sort()
             end
         end
         if member and buffs[settings.mode][member_table[member.name]] then
-			table.sort(buffs['blacklist'][member_table[member.name]])
-			table.sort(buffs['whitelist'][member_table[member.name]])
-		end
+            table.sort(buffs['blacklist'][member_table[member.name]])
+            table.sort(buffs['whitelist'][member_table[member.name]])
+        end
     end
-	Update(buffs[settings.mode])
+    Update(buffs[settings.mode])
 end
 
 function Update(buff_table)
@@ -202,7 +205,6 @@ function Update(buff_table)
             image:update()
         end
     end
-    
 end
 
 windower.register_event('load', function() --Create member table if addon is loaded while already in pt
@@ -221,6 +223,8 @@ windower.register_event('load', function() --Create member table if addon is loa
             end
         end
     end
+    local data = windower.packets.last_incoming(0x076)
+    if data then parse_buffs(data) end
 end)
 
 windower.register_event('addon command', function(...)
