@@ -65,6 +65,7 @@ debuffs = {
     [167] = S{656}, --Magic Def. Down
     [168] = S{508}, --inhibit TP
     [192] = S{368,369,370,371,372,373,374,375}, --requiem
+    [193] = S{376,377,463,471}, --lullaby on private servers, on retail the effect sent is sleep(2)
     [194] = S{421,422,423}, --elegy
     [217] = S{454,455,456,457,458,459,460,461,871,872,873,874,875,876,877,878}, --threnodies
     [223] = S{472}, --nocturne
@@ -265,8 +266,9 @@ function inc_action(act)
                     duration = os.clock() + 30
                 elseif T{376,463}:contains(spell) then -- horde and foe lullaby
                     duration = os.clock() + 45
-                    if debuffed_mobs[target] and debuffed_mobs[target][2] then
+                    if debuffed_mobs[target] and (debuffed_mobs[target][2] or debuffed_mobs[target][193]) then
                         debuffed_mobs[target][2] = nil
+                        debuffed_mobs[target][193] = nil
                     end
                 elseif T{253,258,273,454,455,456,457,458,459,460,461,531,584,598,610,651,678,682,687,707,722,725}:contains(spell) then -- 1 min spells durations
                     duration = os.clock() + 60
@@ -274,8 +276,9 @@ function inc_action(act)
                     duration = os.clock() + 90
                 elseif T{377,471}:contains(spell) then -- horde and foe lullaby II
                     duration = os.clock() + 90
-                    if debuffed_mobs[target] and debuffed_mobs[target][2] then
+                    if debuffed_mobs[target] and (debuffed_mobs[target][2] or debuffed_mobs[target][193]) then
                         debuffed_mobs[target][2] = nil
+                        debuffed_mobs[target][193] = nil
                     end
                 elseif T{240,705}:contains(spell) then -- Drown overwrittes Burn
                     duration = os.clock() + 90
@@ -366,19 +369,20 @@ function inc_action(act)
                 local target = act.targets[i].id
                 local tier = act.targets[i].actions[1].param
                 
-                if tier == 1 or not step_duration[effect] then
-                    step_duration[effect] = os.clock() + 60
-                elseif step_duration[effect] - os.clock() >= 90 then
-                    step_duration[effect] = os.clock() + 120
+                if not step_duration[target] then step_duration[target] = {} end
+                if tier == 1 or not step_duration[target][effect] then
+                    step_duration[target][effect] = os.clock() + 60
+                elseif step_duration[target][effect] - os.clock() >= 90 then
+                    step_duration[target][effect] = os.clock() + 120
                 else
-                    step_duration[effect] = step_duration[effect] + 30
+                    step_duration[target][effect] = step_duration[target][effect] + 30
                 end
                 
                 if not debuffed_mobs[target] then
                     debuffed_mobs[target] = {}
                 end
                 
-                debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[effect]}
+                debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[target][effect]}
             end
         end
     elseif act.category == 1 and debuffed_mobs[act.actor] then
