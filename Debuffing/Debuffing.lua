@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.5'
+_addon.version = '1.6'
 
 require('luau')
 packets = require('packets')
@@ -23,21 +23,22 @@ settings = config.load(defaults)
 box = texts.new('${current_string}', settings)
 box:show()
 
-frame_time = 0
-debuffed_mobs = {}
+local frame_time = 0
+local debuffed_mobs = {}
+local TH = {}
 
-helixes = S{278,279,280,281,282,283,284,285,
+local helixes = S{278,279,280,281,282,283,284,285,
     885,886,887,888,889,890,891,892}
 
-ja_spells = S{496,497,498,499,500,501}
+local ja_spells = S{496,497,498,499,500,501}
 
-step_duration = {}
+local step_duration = {}
 
-erase_abilities = S{2370, 2571, 2714, 2718, 2775, 2831}
+local erase_abilities = S{2370, 2571, 2714, 2718, 2775, 2831}
 
-partial_erase_abilities = S{1245, 1273}
+local partial_erase_abilities = S{1245, 1273}
 
-debuffs = {
+local debuffs = {
     [2] = S{253,259,273,274,376,377,463,471,584,598,678}, --Sleep
     [3] = S{220,221,225,350,351,716}, --Poison
     [4] = S{58,80,341,644,704}, --Paralyze
@@ -82,7 +83,7 @@ debuffs = {
 
 }
 
-hierarchy = {
+local hierarchy = {
     [23] = 1, --Dia
     [24] = 4, --Dia II
     [25] = 6, --Dia III
@@ -135,7 +136,7 @@ function apply_helix(target, spell)
     debuffed_mobs[target][186] = {name = spell, timer = os.clock() + 230}
 end
 
-ja_spells_names = {
+local ja_spells_names = {
     [496] = {
         [1] = 'Fire Damage + 5%',
         [2] = 'Fire Damage + 10%',
@@ -207,27 +208,30 @@ function update_box()
     
         local debuff_table = debuffed_mobs[target.id]
 
-        current_string = 'Debuffs ['..target.name..']\n'
+        current_string = 'Debuffs ['..target.name..']'
+        if TH[target.id] then
+            current_string = current_string..'\n- '..TH[target.id]
+        end
         if debuff_table then
             for effect, spell in pairs(debuff_table) do
                 if spell then
                     if type(spell) == 'table' then
                         if (spell.timer - os.clock()) >= 0 then
                             if T{201,202,203,312}:contains(effect) then
-                                current_string = current_string..'\n'..spell.name
+                                current_string = current_string..'\n- '..spell.name
                                 current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
                             elseif ja_spells:contains(spell.name) then
-                                current_string = current_string..'\n'..ja_spells_names[spell.name][spell.tier]
+                                current_string = current_string..'\n- '..ja_spells_names[spell.name][spell.tier]
                                 current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
                             else
-                                current_string = current_string..'\n'..res.spells[spell.name].en
+                                current_string = current_string..'\n- '..res.spells[spell.name].en
                                 current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
                             end
                         else
                             debuff_table[effect] = nil
                         end
                     else
-                        current_string = current_string..'\n'..res.spells[spell].en
+                        current_string = current_string..'\n- '..res.spells[spell].en
                     end
                 end
             end
@@ -352,7 +356,6 @@ function inc_action(act)
 	elseif act.category == 11 then
 		for i, v in pairs(act.targets) do
 			if T{101}:contains(act.targets[i].actions[1].message) then
-				
 				if erase_abilities:contains(act.param) and debuffed_mobs[act.targets[i].id] then
 					debuffed_mobs[act.targets[i].id] = nil
 				end
@@ -385,20 +388,27 @@ function inc_action(act)
                 debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[target][effect]}
             end
         end
-    elseif act.category == 1 and debuffed_mobs[act.actor] then
-        if debuffed_mobs[act.actor][2] then
-            debuffed_mobs[act.actor][2] = nil
-        elseif debuffed_mobs[act.actor][7] then
-            debuffed_mobs[act.actor][7] = nil
-        elseif debuffed_mobs[act.actor][28] then
-            debuffed_mobs[act.actor][28] = nil
+    elseif act.category == 1 then
+        if debuffed_mobs[act.actor] then
+            if debuffed_mobs[act.actor][2] then
+                debuffed_mobs[act.actor][2] = nil
+            elseif debuffed_mobs[act.actor][7] then
+                debuffed_mobs[act.actor][7] = nil
+            elseif debuffed_mobs[act.actor][28] then
+                debuffed_mobs[act.actor][28] = nil
+            end
+        elseif act.targets[1].actions[1].has_add_effect and act.targets[1].actions[1].add_effect_message == 603 then
+            TH[act.targets[1].id] = 'TH: '..act.targets[1].actions[1].add_effect_param
         end
+    elseif act.category == 3 and act.targets[1].actions[1].message == 608 then
+        TH[act.targets[1].id] = 'TH: '..act.targets[1].actions[1].param
     end
 end
 
 function inc_action_message(arr)
     if T{6,20,113,406,605,646}:contains(arr.message_id) then
         debuffed_mobs[arr.target_id] = nil
+        TH[arr.target_id] = nil
     elseif T{204,206}:contains(arr.message_id) then
         if debuffed_mobs[arr.target_id] then
             if arr.message_id == 206 then
@@ -450,6 +460,7 @@ end
 
 windower.register_event('logout','zone change', function()
     debuffed_mobs = {}
+    TH = {}
 end)
 
 windower.register_event('incoming chunk', function(id, data)
@@ -462,6 +473,11 @@ windower.register_event('incoming chunk', function(id, data)
         arr.message_id = data:unpack('H',0x19)%32768
         
         inc_action_message(arr)
+    elseif id == 0x00E then
+        local packet = packets.parse('incoming', data)
+        if TH[packet['NPC']] and packet['Status'] == 0 and packet['HP %'] == 100 then
+            TH[packet['NPC']] = nil
+        end
     end
 end)
 
