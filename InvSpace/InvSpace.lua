@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'InvSpace'
 _addon.author = 'Kenshi'
-_addon.version = '3.0'
+_addon.version = '3.1'
 
 
 require('luau')
@@ -79,7 +79,7 @@ bags_text = texts.new(settings.display, settings)
 
 local bag_names = T{'Inventory', 'Satchel', 'Sack', 'Case', 'Wardrobe', 'Wardrobe2', 'Wardrobe3', 'Wardrobe4', 'Safe', 'Safe2', 'Storage', 'Locker', 'Temporary'}
 for i = 1, 13 do
-    if defaults['Show'..bag_names[i]] then
+    if settings['Show'..bag_names[i]] then
         bags_text:appendline(' ${current_'..i..'|0}${max_'..i..'|0}${diff_'..i..'|0}')
     end
 end
@@ -102,7 +102,7 @@ end)
 
 -- Events
 
-windower.register_event('prerender', function()
+function Update()
     local bags = windower.ffxi.get_bag_info()
     local giles = windower.ffxi.get_items().gil
     if not windower.ffxi.get_info().logged_in or not windower.ffxi.get_player() then
@@ -116,9 +116,9 @@ windower.register_event('prerender', function()
         local info = S{}
         for i = 1, 13 do
             local color = bags[bag_names[i]:lower()].max - bags[bag_names[i]:lower()].count
-            info['current_'..i] = (
-                color == 0 and
-                    '\\cs(255,0,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))
+        info['current_'..i] = (
+            color == 0 and
+                '\\cs(255,0,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))
                 or color > 10 and
                     '\\cs(0,255,0)' .. ((bag_names[i]..': '):rpad(' ', 11)..bags[bag_names[i]:lower()].count:string():lpad(' ', 2))
                 or 
@@ -147,4 +147,6 @@ windower.register_event('prerender', function()
         bags_text:update(info)
         bags_text:show()
     end
-end)
+end
+
+Update:loop(0.5)
