@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '3.1'
+_addon.version = '3.2'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
@@ -181,6 +181,7 @@ function Update(buff_table)
                         image:clear()
                         image:hide()
                     elseif buff_table[member_table[member.name]][i] == 255 or buff_table[member_table[member.name]][i] == 0 then
+                        buff_table[member_table[member.name]][i] = 1000
                         image:clear()
                         image:hide()
                     else            
@@ -195,7 +196,9 @@ function Update(buff_table)
                             image:pos_x(x)
                             image:pos_y(y)
                         end
-                        image:show()
+                        if windower.ffxi.get_player().status ~= 4 then
+                           image:show()
+                        end
                     end
                 end
             else
@@ -206,6 +209,18 @@ function Update(buff_table)
         end
     end
 end
+
+windower.register_event('status change', function(new_status_id)
+	if new_status_id == 4 then --Cutscene/Menu
+         for k = 1, 5 do
+            for image, i in party_buffs[k]:it() do
+                image:hide()
+            end
+         end
+    else
+        Update(buffs[settings.mode])
+    end
+end)
 
 windower.register_event('load', function() --Create member table if addon is loaded while already in pt
     if not windower.ffxi.get_info().logged_in then return end

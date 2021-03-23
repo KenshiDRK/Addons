@@ -1,6 +1,6 @@
 _addon.name = 'PartyPets'
 _addon.author = 'Kenshi'
-_addon.version = '1.1'
+_addon.version = '1.2'
 
 require('luau')
 texts = require('texts')
@@ -92,6 +92,7 @@ local function Update()
 
     if zoning_bool then
         box:hide()
+        return
     end
     current_string = 'Party Pets:'
     for k = 1, 18 do
@@ -181,6 +182,14 @@ windower.register_event('load', 'login', function() --Create member table if add
     create_members_table()
 end)
 
+windower.register_event('status change', function(new_status_id)
+	if new_status_id == 4 then --Cutscene/Menu
+		zoning_bool = true
+    else
+        zoning_bool = false
+    end
+end)
+
 local function CheckPet(index)
     for i, v in pairs(pets) do
         if v then
@@ -214,7 +223,7 @@ local function GetMemberIndex(index)
 end
 
 local function CheckNoTrust(name, index)
-    coroutine.sleep(0.7)
+    coroutine.sleep(0.8)
     local mob = windower.ffxi.get_mob_by_index(index)
     if not mob then return end
     if mob.spawn_type == 2 then

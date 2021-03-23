@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'InvSpace'
 _addon.author = 'Kenshi'
-_addon.version = '3.1'
+_addon.version = '3.2'
 
 
 require('luau')
@@ -41,8 +41,8 @@ defaults.ShowSack = true
 defaults.ShowCase = true
 defaults.ShowWardrobe = true
 defaults.ShowWardrobe2 = true
-defaults.ShowWardrobe3 = false
-defaults.ShowWardrobe4 = false
+defaults.ShowWardrobe3 = true
+defaults.ShowWardrobe4 = true
 defaults.ShowSafe = true
 defaults.ShowSafe2 = true
 defaults.ShowStorage = true
@@ -77,6 +77,7 @@ settings = config.load(defaults)
 
 bags_text = texts.new(settings.display, settings)
 
+local zoning_bool = false
 local bag_names = T{'Inventory', 'Satchel', 'Sack', 'Case', 'Wardrobe', 'Wardrobe2', 'Wardrobe3', 'Wardrobe4', 'Safe', 'Safe2', 'Storage', 'Locker', 'Temporary'}
 for i = 1, 13 do
     if settings['Show'..bag_names[i]] then
@@ -96,11 +97,17 @@ windower.register_event('incoming chunk',function(id)
     if id == 0xB and bags_text:visible() then
         zoning_bool = true
     elseif id == 0xA and zoning_bool then
-        zoning_bool = nil
+        zoning_bool = false
     end
 end)
 
--- Events
+windower.register_event('status change', function(new_status_id)
+	if new_status_id == 4 then --Cutscene/Menu
+		zoning_bool = true
+    else
+        zoning_bool = false
+    end
+end)
 
 function Update()
     local bags = windower.ffxi.get_bag_info()

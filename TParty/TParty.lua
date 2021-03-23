@@ -18,6 +18,8 @@ defaults.ShowRanges = true
 
 settings = config.load(defaults)
 
+local zoning_bool = false
+
 hpp = texts.new('${hpp}', {
     pos = {
         x = -104,
@@ -254,9 +256,17 @@ windower.register_event('incoming chunk', function(id, data)
     if id == 0xB then
         zoning_bool = true
     elseif id == 0xA and zoning_bool then
-        zoning_bool = nil
+        zoning_bool = false
     end
     
+end)
+
+windower.register_event('status change', function(new_status_id)
+	if new_status_id == 4 then --Cutscene/Menu
+		zoning_bool = true
+    else
+        zoning_bool = false
+    end
 end)
 
 windower.register_event('prerender', function() 
@@ -299,7 +309,7 @@ windower.register_event('prerender', function()
                     height:hide()
                     tdistance:hide()
                     rdistance:hide()
-                else
+                elseif windower.ffxi.get_player().status ~= 4 then
                     height:show()
                     tdistance:show()
                     rdistance:show()
@@ -387,12 +397,14 @@ windower.register_event('prerender', function()
                         mob.distance = mob.distance:sqrt()
                         if mob.index == player.index or mob.valid_target == false then
                             text:hide()
-                        elseif target and target.index == mob.index then
-                            text:color(0, 255, 0)
-                            text:show()
-                        else
-                            text:color(255, 255, 255)
-                            text:show()
+                        elseif windower.ffxi.get_player().status ~= 4 then
+                            if target and target.index == mob.index then
+                                text:color(0, 255, 0)
+                                text:show()
+                            else
+                                text:color(255, 255, 255)
+                                text:show()
+                            end
                         end
                         text:update(mob)
                     end
