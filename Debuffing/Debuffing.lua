@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.7'
+_addon.version = '1.8'
 _addon.commands = {'df', 'debuffing'}
 
 require('luau')
@@ -141,50 +141,92 @@ function handle_shot(target, shot)
     
     if shot == 125 and debuffed_mobs[target][128] then
         local current = debuffed_mobs[target][128].name
-        debuffed_mobs[target][128].name = current..' (Fire Shot)'
+        if not debuffed_mobs[target][128].shot then
+            debuffed_mobs[target][128].shot = 1
+            debuffed_mobs[target][128].name = current..(' (Fire Shot)')
+        else
+            debuffed_mobs[target][128].shot = 2
+            debuffed_mobs[target][128].name = current..('x2')
+        end
     elseif shot == 126 then
-        if debuffed_mobs[target][4] then
+        if debuffed_mobs[target][4] and T{58,80}:contains(debuffed_mobs[target][4].id) and not debuffed_mobs[target][4].shot then
             local current = debuffed_mobs[target][4].name
+            debuffed_mobs[target][4].shot = 1
             debuffed_mobs[target][4].name = current..' (Ice Shot)'
         end
         if debuffed_mobs[target][129] then
             local current = debuffed_mobs[target][129].name
-            debuffed_mobs[target][129].name = current..' (Ice Shot)'
+            if not debuffed_mobs[target][129].shot then
+                debuffed_mobs[target][129].shot = 1
+                debuffed_mobs[target][129].name = current..' (Ice Shot)'
+            else
+                debuffed_mobs[target][129].shot = 2
+                debuffed_mobs[target][129].name = current..'x2'
+            end
         end
     elseif shot == 127 and debuffed_mobs[target][130] then
         local current = debuffed_mobs[target][130].name
-        debuffed_mobs[target][130].name = current..' (Wind Shot)'
+        if not debuffed_mobs[target][130].shot then
+            debuffed_mobs[target][130].shot = 1
+            debuffed_mobs[target][130].name = current..' (Wind Shot)'
+        else
+            debuffed_mobs[target][130].shot = 1
+            debuffed_mobs[target][130].name = current..'x2'
+        end
     elseif shot == 128 then
-        if debuffed_mobs[target][13] then
+        if debuffed_mobs[target][13] and T{56,344,345}:contains(debuffed_mobs[target][13].id) and not debuffed_mobs[target][13].shot then
             local current = debuffed_mobs[target][13].name
+            debuffed_mobs[target][13].shot = 1
             debuffed_mobs[target][13].name = current..' (Eart Shot)'
         end
         if debuffed_mobs[target][131] then
             local current = debuffed_mobs[target][131].name
-            debuffed_mobs[target][131].name = current..' (Earth Shot)'
+            if not debuffed_mobs[target][131].shot then
+                debuffed_mobs[target][131].shot = 1
+                debuffed_mobs[target][131].name = current..' (Earth Shot)'
+            else
+                debuffed_mobs[target][131].shot = 2
+                debuffed_mobs[target][131].name = current..'x2'
+            end
         end
     elseif shot == 129 and debuffed_mobs[target][132] then
         local current = debuffed_mobs[target][132].name
-        debuffed_mobs[target][132].name = current..' (Thunder Shot)'
+        if not debuffed_mobs[target][132].shot then
+            debuffed_mobs[target][132].shot = 1
+            debuffed_mobs[target][132].name = current..' (Thunder Shot)'
+        else
+            debuffed_mobs[target][132].shot = 2
+            debuffed_mobs[target][132].name = current..'x2'
+        end
     elseif shot == 130 then
-        if debuffed_mobs[target][3] then
+        if debuffed_mobs[target][3] and T{220,221}:contains(debuffed_mobs[target][3].id) and not debuffed_mobs[target][3].shot then
             local current = debuffed_mobs[target][3].name
-            debuffed_mobs[target][3].name = current..' (Dark Shot)'
+            debuffed_mobs[target][3].shot = 1
+            debuffed_mobs[target][3].name = current..' (Water Shot)'
         end
         if debuffed_mobs[target][133] then
             local current = debuffed_mobs[target][133].name
-            debuffed_mobs[target][133].name = current..' (Dark Shot)'
+            if not debuffed_mobs[target][133].shot then
+                debuffed_mobs[target][133].shot = 1
+                debuffed_mobs[target][133].name = current..' (Water Shot)'
+            else
+                debuffed_mobs[target][133].shot = 2
+                debuffed_mobs[target][133].name = current..'x2'
+            end
         end
-    elseif shot == 131 and debuffed_mobs[target][134] then
+    elseif shot == 131 and debuffed_mobs[target][134] and not debuffed_mobs[target][134].shot then
         local current = debuffed_mobs[target][134].name
+        debuffed_mobs[target][134].shot = 1
         debuffed_mobs[target][134].name = current..' (Light Shot)'
     elseif shot == 132 then
-        if debuffed_mobs[target][5] then
+        if debuffed_mobs[target][5] and T{254,276,347,348}:contains(debuffed_mobs[target][5].id) and not debuffed_mobs[target][5].shot then
             local current = debuffed_mobs[target][5].name
+            debuffed_mobs[target][5].shot = 1
             debuffed_mobs[target][5].name = current..' (Dark Shot)'
         end
-        if debuffed_mobs[target][135] then
+        if debuffed_mobs[target][135] and not debuffed_mobs[target][135].shot then
             local current = debuffed_mobs[target][135].name
+            debuffed_mobs[target][135].shot = 1
             debuffed_mobs[target][135].name = current..' (Dark Shot)'
         end
     end
@@ -359,7 +401,7 @@ function inc_action(act)
             end
         end
     elseif act.category == 6 then
-        if T{125,126,127,128,129,130,131,132}:contains(act.param) then
+        if T{125,126,127,128,129,130,131,132}:contains(act.param) and act.targets[1].actions[1].message ~= 323 then
             handle_shot(act.targets[1].id, act.param)
         end
     elseif act.category == 14 then
