@@ -1,6 +1,6 @@
 _addon.name = 'PartyPets'
 _addon.author = 'Kenshi'
-_addon.version = '1.2'
+_addon.version = '1.3'
 
 require('luau')
 texts = require('texts')
@@ -119,7 +119,11 @@ local function Update()
                     local m_mp = pets[member.name].Pet.m_mp
                     local mpp = c_mp * 100 / m_mp
                     local mp_color = hp_col(mpp)
-                    current_string = current_string..' '..hp_color..c_hp..line_c..'/'..m_hp..' ['..hp_color..hpp..'%'..line_c..'] '..mp_color..c_mp..line_c..'/'..m_mp..tp_color..pet_dist(pet_index)
+                    if m_mp > 0 then
+                        current_string = current_string..' '..hp_color..c_hp..line_c..'/'..m_hp..' ['..hp_color..hpp..'%'..line_c..'] '..mp_color..c_mp..line_c..'/'..m_mp..tp_color..pet_dist(pet_index)
+                    else
+                        current_string = current_string..' '..hp_color..c_hp..line_c..'/'..m_hp..' ['..hp_color..hpp..'%'..line_c..']'..tp_color..pet_dist(pet_index)
+                    end
                 else
                     current_string = current_string..' ['..hp_color..hpp..'%\\cr'..line_c..']'..tp_color..pet_dist(pet_index)
                 end
@@ -257,25 +261,22 @@ windower.register_event('incoming chunk', function(id, data)
         local packet = packets.parse('incoming', data)
         if packet['Index'] < 1024 then return end
         if CheckPet(packet['Index']) then
-            local hp_update = string.sub(packet['Mask']:binary(),-3,-3)
-            local name_update = string.sub(packet['Mask']:binary(),-4,-4)
-            local fellow = string.sub(packet['Mask']:binary(),-5,-5)
-            local despawn = string.sub(packet['Mask']:binary(),-6,-6)
+            local mask = packet.Mask
             local owner = GetMemberName(packet['Index'])
-            local fellow_var = fellow == '1' and 'Fellow' or 'Pet'
-            if despawn == '1' then
+            local fellow_var = bit.band(mask, 16) == 16 and 'Fellow' or 'Pet'
+            if bit.band(mask, 32) == 32 then
                 local pet_owner = windower.ffxi.get_mob_by_index(GetMemberIndex(packet['Index']))
                 pets[owner][fellow_var].Dead = (pets[owner][fellow_var].HPP == 0 or (pet_owner and not pet_owner.pet_index)) and true
                 pets[owner][fellow_var].Out_of_Range = pets[owner][fellow_var].HPP > 0 and true
             end
-            if hp_update == '1' then
+            if bit.band(mask, 4) == 4 then --hp, status update
                 pets[owner][fellow_var].HPP = packet['HP %']
                 if packet['HP %'] > 0 then
                     pets[owner][fellow_var].Dead = false
                     pets[owner][fellow_var].Out_of_Range = false
                 end
             end
-            if name_update == '1' then
+            if bit.band(mask, 8) == 8 then --name update
                 pets[owner][fellow_var].Name = packet['Name']
             end
         end
