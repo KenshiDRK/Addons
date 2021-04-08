@@ -91,7 +91,7 @@ function handle_overwrites(target, new, t)
     end
     
     for effect, spell in pairs(debuffed_mobs[target]) do
-        local old = res.spells[spell.id].overwrites or {}
+        local old = res.spells[spell.id] and res.spells[spell.id].overwrites or {}
         
         -- Check if there isn't a higher priority debuff active
         if table.length(old) > 0 then
