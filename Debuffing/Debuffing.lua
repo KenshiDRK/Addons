@@ -1,9 +1,10 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.8'
+_addon.version = '1.9'
 _addon.commands = {'df', 'debuffing'}
 
 require('luau')
+file = require 'files'
 packets = require('packets')
 texts = require('texts')
 
@@ -19,7 +20,15 @@ defaults.flags.bold = false
 defaults.flags.draggable = true
 defaults.bg = {}
 defaults.bg.alpha = 255
-defaults.duration = {}
+
+default_durations = [[
+<? xml version="1.0" ?>
+<settings>
+    <global>
+        
+    </global>
+</settings>
+]]
 
 settings = config.load(defaults)
 box = texts.new('${current_string}', settings)
@@ -32,6 +41,8 @@ local ja_spells = S{496,497,498,499,500,501}
 local step_duration = {}
 local erase_abilities = S{2370, 2571, 2714, 2718, 2775, 2831}
 local partial_erase_abilities = S{1245, 1273}
+local server
+local durations
 local debuffs_map = {
     [112] = {effect = 156, duration = 12},
     [242] = {effect = 242, duration = 215}, --Absorb ACC
@@ -342,11 +353,12 @@ function inc_action(act)
                     apply_ja_spells(act.targets[i].id, act.param)
                 else
                     local spell = act.param
+                    local actor = tostring(act.actor_id)
                     if T{33,34,35,36,37}:contains(spell) then --Diaga handling
                         spell = spell - 10
                     end
                     local effect = res.spells[spell] and res.spells[spell].status or nil
-                    local duration = settings.duration[tostring(spell)] or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
+                    local duration = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
                     if effect then
                         apply_debuff(act.targets[i].id, effect, act.param, duration)
                     end
@@ -355,6 +367,7 @@ function inc_action(act)
                 local effect = act.targets[i].actions[1].param
                 local target = act.targets[i].id
                 local spell = act.param
+                local actor = tostring(act.actor_id)
                 if T{225,226,227,228,229}:contains(spell) then --Poisonga handling
                     spell = spell - 5
                 end
@@ -365,7 +378,7 @@ function inc_action(act)
                 elseif spell == 705 and debuffed_mobs[target][132] then
                     return
                 end
-                local duration = settings.duration[tostring(spell)] or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
+                local duration = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
                 if res.spells[spell].status and res.spells[spell].status == effect then
                     apply_debuff(target, effect, act.param, duration)
                 elseif debuffs_map[spell] and type(debuffs_map[spell].effect) == 'table' then
@@ -377,20 +390,14 @@ function inc_action(act)
                 elseif debuffs_map[spell] then
                     apply_debuff(target, debuffs_map[spell].effect, act.param, duration)
                 end
-                --if res.action_messages[act.targets[i].actions[1].message] and res.action_messages[act.targets[i].actions[1].message].color ~= 'D' then
-                    --if (debuffs_map[spell] and debuffs_map[spell].effect ~= effect) or (res.spells[spell] and res.spells[spell].status and res.spells[spell].status ~= effect) then
-                        --log('Inconsistency: Spell '..spell..', Resources Effect '..res.spells[spell].status..', Debuffing Effect '..debuffs_map[spell].effect..', Server Effect '..effect)
-                    --else
-                        --log('Unhandled spell: Spell '..spell..', Effect '..effect)
-                    --end
-                --end
             
             elseif T{329,330,331,332,333,334,335,533}:contains(act.targets[i].actions[1].message) then --absorb spells
                 local effect = debuffs_map[spell] and debuffs_map[spell].effect or nil
                 if not effect then return end
                 local target = act.targets[i].id
                 local spell = act.param
-                local duration = settings.duration[tostring(spell)] or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
+                local actor = tostring(act.actor_id)
+                local duration = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
                 local name = res.spells[spell] and res.spells[spell].en or 'Unknown'
                 
                 if not debuffed_mobs[target] then
@@ -426,6 +433,20 @@ function inc_action(act)
                 
                 debuffed_mobs[target][effect] = {name = res.job_abilities[effect].en.." lv."..tier, timer = step_duration[target][effect]}
             end
+        end
+    elseif act.category == 15 then
+        if T{372,375}:contains(act.param) and T{320,672}:contains(act.targets[1].actions[1].message) then
+            local effect = act.targets[1].actions[1].param
+            local target = act.targets[1].id
+            local spell = act.param
+            local actor = tostring(act.actor_id)
+            local duration = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or (res.spells[spell] and res.spells[spell].duration) or (debuffs_map[spell] and debuffs_map[spell].duration) or 0
+            
+            if not debuffed_mobs[target] then
+                debuffed_mobs[target] = {}
+            end
+            
+            debuffed_mobs[target][effect] = {name = res.job_abilities[spell].en, timer = os.clock() + duration}
         end
     elseif T{1,7,8,11}:contains(act.category) then
         if debuffed_mobs[act.actor_id] then
@@ -543,27 +564,61 @@ windower.register_event('prerender', function()
     end
 end)
 
+windower.register_event('load', 'login', function()
+    if not windower.dir_exists(windower.addon_path..'data\\') then
+        windower.create_dir(windower.addon_path..'data\\')
+    end
+    local durationsFile=file.new('data\\durations.xml',true)
+    if not file.exists('data\\durations.xml') then
+        durationsFile:write(default_durations)
+    end
+    durations = config.load('data\\durations.xml')
+    
+    local info = windower.ffxi.get_info()
+    if not info.logged_in then return end
+    server = res.servers[info.server] and res.servers[info.server].en:lower() or "privateserver"
+end)
+
 windower.register_event('addon command', function(...)
     local commands = T{...}
     local player = windower.ffxi.get_player()
     if not player then return end
     if commands and #commands > 1 then
+        local target = windower.ffxi.get_mob_by_target('t')
+        if not target or target.is_npc then return log('No target found') end
+        local tid = tostring(target.id) 
+        if not durations[server] then durations[server] = {} end
+        if not durations[server][tid] then durations[server][tid] = {} end
         local spell = tostring(table.concat(commands," ",1,#commands - 1):lower())
         local timer = tonumber(commands[#commands])
-        if spell then --and type(timer) == 'number' then
+        if spell then
             local result = false
             for i, v in pairs(res.spells) do
                 if spell == (v.name):lower() or tonumber(spell) == i then
                     if type(timer) == 'number' then
-                        if not settings.duration[player.name] then settings.duration[player.name] = {} end
-                        settings.duration[player.name][tostring(v.id)] = timer
-                        log('Duration for '..v.name..' set to '..timer..' seconds')
-                        config.save(settings)
+                        durations[server][tid][tostring(v.id)] = timer
+                        log(target.name..' duration for '..v.name..' set to '..timer..' seconds')
                     elseif commands[#commands]:lower() == 'remove' then
-                        if settings.duration[player.name] and settings.duration[player.name][tostring(v.id)] then
-                            settings.duration[player.name][tostring(v.id)] = nil
-                            log('Duration for '..v.name..' removed')
-                            config.save(settings)
+                        if durations[server][tid] and durations[server][tid][tostring(v.id)] then
+                            durations[server][tid][tostring(v.id)] = nil
+                            log(target.name..' duration for '..v.name..' removed')
+                        else
+                            log(target.name..' spell '..v.name..' doesn\'t have a specified timer')
+                        end
+                    end
+                    result = true
+                    break
+                end
+            end
+            for i, v in pairs(res.job_abilities) do
+                if spell == (v.name):lower() or tonumber(spell) == i then
+                    if type(timer) == 'number' then
+                        durations[server][tid][tostring(v.id)] = timer
+                        log(target.name..' duration for '..v.name..' set to '..timer..' seconds')
+                    elseif commands[#commands]:lower() == 'remove' then
+                        if durations[server][tid] and durations[server][tid][tostring(v.id)] then
+                            durations[server][tid][tostring(v.id)] = nil
+                            log(target.name..' duration for '..v.name..' removed')
                         else
                             log('Spell '..v.name..' doesn\'t have a specified timer')
                         end
@@ -572,6 +627,7 @@ windower.register_event('addon command', function(...)
                     break
                 end
             end
+            config.save(durations, 'all')
             if not result then
                 log('Spell not found: incorrent spell name/id or outdated resources')
             end
