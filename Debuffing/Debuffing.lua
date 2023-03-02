@@ -9,6 +9,7 @@ packets = require('packets')
 texts = require('texts')
 
 defaults = {}
+defaults.keep_buff_after_timer = false
 defaults.pos = {}
 defaults.pos.x = 600
 defaults.pos.y = 300
@@ -94,6 +95,17 @@ local debuffs_map = {
     [726] = {effect = 147, duration = 180},
     [738] = {effect = 28, duration = 30},
     [746] = {effect = 28, duration = 30},
+}
+
+local BloodPact_map = {
+    [580] = {duration = 90},
+    [585] = {duration = 90},
+    [611] = {duration = 90},
+    [617] = {duration = 180},
+    [633] = {duration = 15},
+    [657] = {duration = 60},
+    [963] = {duration = 90},
+    [966] = {duration = 180},
 }
 
 function handle_overwrites(target, new, t)
@@ -306,6 +318,16 @@ function apply_ja_spells(target, spell)
     debuffed_mobs[target][1000] = {id = spell, name = spell, tier = ja_tier, timer = ja_timer}
 end
 
+function get_pet_owner(id)
+    local pet = windower.ffxi.get_mob_by_id(id)
+    for i,v in pairs(windower.ffxi.get_party()) do
+        if type(v) == 'table' and v.mob and v.mob.pet_index and v.mob.pet_index == pet.index then
+            return v.mob.id
+        end
+    end
+    return id
+end
+
 function update_box()
     local current_string = ''
     local player = windower.ffxi.get_player()
@@ -330,6 +352,14 @@ function update_box()
                             else
                                 current_string = current_string..'\n- '..spell.name --res.spells[spell.name].en
                                 current_string = current_string..' : '..string.format('%.0f',spell.timer - os.clock())
+                            end
+                        elseif settings.keep_buff_after_timer then
+                            if ja_spells:contains(spell.name) then
+                                current_string = current_string..'\n- '..ja_spells_names[spell.name][spell.tier]
+                                current_string = current_string..' : Unknown'
+                            else
+                                current_string = current_string..'\n- '..spell.name --res.spells[spell.name].en
+                                current_string = current_string..' : Unknown'
                             end
                         else
                             debuff_table[effect] = nil
@@ -410,6 +440,24 @@ function inc_action(act)
     elseif act.category == 6 then
         if T{125,126,127,128,129,130,131,132}:contains(act.param) and act.targets[1].actions[1].message ~= 323 then
             handle_shot(act.targets[1].id, act.param)
+        end
+    elseif act.category == 13 then
+        if T{611,657,963}:contains(act.param) then
+            for i, v in pairs(act.targets) do
+                if T{320,267}:contains(act.targets[i].actions[1].message) then
+                    local spell = act.param
+                    local effect = (BloodPact_map[spell] and BloodPact_map[spell].effect) or act.targets[i].actions[1].param
+                    local target = act.targets[i].id
+                    local actor = get_pet_owner(act.actor_id)
+                    local duration = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or (BloodPact_map[spell] and BloodPact_map[spell].duration) or 0
+                    
+                    if not debuffed_mobs[target] then
+                        debuffed_mobs[target] = {}
+                    end
+                    
+                    debuffed_mobs[target][effect] = {name = res.job_abilities[spell].en..' ('..res.buffs[effect].en..')', timer = os.clock() + duration}
+                end
+            end
         end
     elseif act.category == 14 then
         for i, v in pairs(act.targets) do
@@ -583,7 +631,11 @@ windower.register_event('addon command', function(...)
     local commands = T{...}
     local player = windower.ffxi.get_player()
     if not player then return end
-    if commands and #commands > 1 then
+    if commands and commands[1]:lower() == "keep_buff" then
+        settings.keep_buff_after_timer = not settings.keep_buff_after_timer
+        log('Keep buff after timer is now: '..tostring(settings.keep_buff_after_timer))
+        config.save(settings)
+    elseif commands and #commands > 1 then
         local target = windower.ffxi.get_mob_by_target('t')
         if not target or target.is_npc then return log('No target found') end
         local tid = tostring(target.id) 
