@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '3.2'
+_addon.version = '3.3'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
@@ -39,6 +39,7 @@ require('filters')
 defaults = {}
 defaults.size = 10
 defaults.mode = 'blacklist'
+defaults.x_pos = 290
 
 settings = config.load(defaults)
 
@@ -58,7 +59,7 @@ alias_strs = aliases:keyset()
 local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
 
-local x_pos = windower.get_windower_settings().ui_x_res - 190
+local x_pos = windower.get_windower_settings().ui_x_res - settings.x_pos
 do
     for k = 1, 5 do
         party_buffs[k] = T{}
@@ -287,11 +288,21 @@ windower.register_event('addon command', function(...)
             elseif mode == 'status' then
                 windower.add_to_chat(207,'Currently in ' .. settings.mode .. ' mode.')
             else
-                windower.add_to_chat(207,'Invalid mode:', args[1])
+                windower.add_to_chat(207,'Invalid mode: '..mode)
                 return
+            end
+        elseif command == 'x_pos' then
+            if type(tonumber(args[2])) == 'number' then
+                settings.x_pos = tonumber(args[2])
+                settings:save()
+                x_pos = windower.get_windower_settings().ui_x_res - settings.x_pos
+                buff_sort()
+            else
+                windower.add_to_chat(207,'Invalid x_pos, it has to be a number.')
             end
         elseif command == 'help' then
             windower.add_to_chat(207,"Partybuffs Commands:")
+            windower.add_to_chat(207,"//pb|partybuffs x_pos [number] (sets the x position of the icons, from right (0) to left)")
             windower.add_to_chat(207,"//pb|partybuffs size 10 (sets the icon size to 10x10)")
             windower.add_to_chat(207,"//pb|partybuffs size 20 (sets the icon size to 20x20)")
             windower.add_to_chat(207,"//pb|partybuffs mode w|wlist|white|whitelist (sets whitelist mode) ")
