@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
 _addon.author = 'Kenshi'
-_addon.version = '3.3'
+_addon.version = '3.4'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
@@ -40,6 +40,7 @@ defaults = {}
 defaults.size = 10
 defaults.mode = 'blacklist'
 defaults.x_pos = 290
+defaults.alpha = 255
 
 settings = config.load(defaults)
 
@@ -67,7 +68,7 @@ do
         for i = 1, 32 do
             party_buffs[k][i] = images.new({
                 color = {
-                    alpha = 255
+                    alpha = settings.alpha
                 },
                 texture = {
                     fit = false
@@ -187,7 +188,7 @@ function Update(buff_table)
                         image:hide()
                     else            
                         image:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff_table[member_table[member.name]][i] .. '.png')
-                        image:transparency(0)
+                        image:alpha(settings.alpha)
                         image:size(icon_size, icon_size)
                         -- Adjust position for party member count
                         if party_info.party1_count > 1 then
@@ -299,6 +300,15 @@ windower.register_event('addon command', function(...)
                 buff_sort()
             else
                 windower.add_to_chat(207,'Invalid x_pos, it has to be a number.')
+            end
+        elseif command == 'opacity' then
+            if type(tonumber(args[2])) == 'number' and tonumber(args[2]) >= 0 and tonumber(args[2]) <= 255 then
+                settings.alpha = tonumber(args[2])
+                settings:save()
+                x_pos = windower.get_windower_settings().ui_x_res - settings.x_pos
+                buff_sort()
+            else
+                windower.add_to_chat(207,'Invalid opacity, it has to be a number between 0 and 255.')
             end
         elseif command == 'help' then
             windower.add_to_chat(207,"Partybuffs Commands:")
