@@ -313,6 +313,7 @@ windower.register_event('addon command', function(...)
         elseif command == 'help' then
             windower.add_to_chat(207,"Partybuffs Commands:")
             windower.add_to_chat(207,"//pb|partybuffs x_pos [number] (sets the x position of the icons, from right (0) to left)")
+            windower.add_to_chat(207,"//pb|partybuffs opacity [number] (sets the image opacity of the icons, from fully transparent (0) to fully opaque (255))")
             windower.add_to_chat(207,"//pb|partybuffs size 10 (sets the icon size to 10x10)")
             windower.add_to_chat(207,"//pb|partybuffs size 20 (sets the icon size to 20x20)")
             windower.add_to_chat(207,"//pb|partybuffs mode w|wlist|white|whitelist (sets whitelist mode) ")
