@@ -312,7 +312,7 @@ function apply_ja_spells(target, spell)
 		end
     else
         ja_tier = 1
-        ja_timer = os.clock() + 60
+        ja_timer = (durations[server] and durations[server][actor] and durations[server][actor][tostring(spell)]) or os.clock() + 60
     end
     
     debuffed_mobs[target][1000] = {id = spell, name = spell, tier = ja_tier, timer = ja_timer}
@@ -377,6 +377,15 @@ end
 
 function inc_action(act)
     if act.category == 4 then
+        if act.param == 260 then --Dispel
+            if act.targets[1].actions[1].message == 342 then
+                local effect = act.targets[1].actions[1].param
+                local target = act.targets[1].id
+                if debuffed_mobs[target] and debuffed_mobs[target][effect] then
+                    debuffed_mobs[target][effect] = nil
+                end
+            end
+        end
         for i, v in pairs(act.targets) do
             if T{2,252,264,265}:contains(act.targets[i].actions[1].message) then
                 if ja_spells:contains(act.param) then
