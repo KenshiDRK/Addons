@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '1.9'
+_addon.version = '2.0'
 _addon.commands = {'df', 'debuffing'}
 
 require('luau')
@@ -690,7 +690,7 @@ windower.register_event('addon command', function(...)
             end
             config.save(durations, 'all')
             if not result then
-                log('Spell not found: incorrent spell name/id or outdated resources')
+                log('Spell not found: incorrect spell name/id or outdated resources')
             end
         else
             log('Invalid command: //df|debuffing [spell name|id] [time in seconds|remove]')
