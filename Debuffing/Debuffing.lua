@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '2.0'
+_addon.version = '2.1'
 _addon.commands = {'df', 'debuffing'}
 
 require('luau')
