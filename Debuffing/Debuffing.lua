@@ -97,6 +97,11 @@ local debuffs_map = {
     [746] = {effect = 28, duration = 30},
 }
 
+local ja_map = {
+    [150] = {effect = 149, duration = 90},
+    [170] = {effect = 149, duration = 90},
+}
+
 local BloodPact_map = {
     [580] = {duration = 90},
     [585] = {duration = 90},
@@ -534,6 +539,23 @@ function inc_action(act)
         end
     elseif act.category == 3 and act.targets[1].actions[1].message == 608 then
         TH[act.targets[1].id] = 'TH: '..act.targets[1].actions[1].param
+    elseif act.category == 3 and act.targets[1].actions[1].message == 0 then
+        local effect = act.targets[i].actions[1].param
+        local spell = act.param
+        print(effect, spell, act.targets[i].actions[1].message)
+        if S{150,170}:contains(spell)--[[Tomahawk/Angon]] and effect == 149--[[Defense Down]] then
+            local name = res.job_abilities[act.param] and res.job_abilities[act.param].en or 'Unknown'
+            local target = act.targets[i].id
+            local actor = act.actor_id
+            local target_id = act.targets[1].id
+            local merit_name = name:lower()
+            local duration = actor == player.id and (30 + ((player.merits[merit_name] or 0)-1)*15) and (durations[server] and durations[server][tostring(actor)] and durations[server][tostring(actor)][tostring(spell)]) or ja_map[spell]
+            print(name, target, actor, duration, target_id, merit_name)
+            if not debuffed_mobs[target] then
+                debuffed_mobs[target] = {}
+            end
+            debuffed_mobs[target][effect] = {name = name, timer = os.clock() + duration}
+        end
     end
 end
 
