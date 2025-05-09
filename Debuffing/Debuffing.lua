@@ -547,7 +547,6 @@ function inc_action(act)
             local actor = act.actor_id
             local target_id = act.targets[1].id
             local merit_name = name:lower()
-            print(actor, player.id, player.merits[merit_name])
             local duration = actor == player.id and (30 + ((player.merits[merit_name] or 0)-1)*15) or (durations[server] and durations[server][tostring(actor)] and durations[server][tostring(actor)][tostring(spell)]) or ja_map[spell] and ja_map[spell].duration or 0
             if not debuffed_mobs[target_id] then
                 debuffed_mobs[target_id] = {}
