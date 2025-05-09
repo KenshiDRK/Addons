@@ -1,6 +1,6 @@
 _addon.name = 'Debuffing'
 _addon.author = 'original: Auk, improvements and additions: Kenshi'
-_addon.version = '2.0'
+_addon.version = '2.1'
 _addon.commands = {'df', 'debuffing'}
 
 require('luau')
@@ -95,6 +95,11 @@ local debuffs_map = {
     [726] = {effect = 147, duration = 180},
     [738] = {effect = 28, duration = 30},
     [746] = {effect = 28, duration = 30},
+}
+
+local ja_map = {
+    [150] = {effect = 149, duration = 90},
+    [170] = {effect = 149, duration = 90},
 }
 
 local BloodPact_map = {
@@ -330,7 +335,7 @@ end
 
 function update_box()
     local current_string = ''
-    local player = windower.ffxi.get_player()
+    player = windower.ffxi.get_player()
     local target = windower.ffxi.get_mob_by_target('st') or windower.ffxi.get_mob_by_target('t')
     
     if target and target.valid_target and target.is_npc and (target.claim_id ~= 0 or target.spawn_type == 16) then
@@ -534,6 +539,20 @@ function inc_action(act)
         end
     elseif act.category == 3 and act.targets[1].actions[1].message == 608 then
         TH[act.targets[1].id] = 'TH: '..act.targets[1].actions[1].param
+    elseif act.category == 3 and act.targets[1].actions[1].message == 100 then
+        local effect = act.targets[1].actions[1].param
+        local spell = act.param
+        if S{150,170}:contains(spell)--[[Tomahawk/Angon]] and effect == 149--[[Defense Down]] then
+            local name = res.job_abilities[spell] and res.job_abilities[spell].en or 'Unknown'
+            local actor = act.actor_id
+            local target_id = act.targets[1].id
+            local merit_name = name:lower()
+            local duration = actor == player.id and (30 + ((player.merits[merit_name] or 0)-1)*15) or (durations[server] and durations[server][tostring(actor)] and durations[server][tostring(actor)][tostring(spell)]) or ja_map[spell] and ja_map[spell].duration or 0
+            if not debuffed_mobs[target_id] then
+                debuffed_mobs[target_id] = {}
+            end
+            debuffed_mobs[target_id][effect] = {name = name, timer = os.clock() + duration}
+        end
     end
 end
 
@@ -593,6 +612,7 @@ end
 windower.register_event('logout','zone change', function()
     debuffed_mobs = {}
     TH = {}
+    player = windower.ffxi.get_player()
 end)
 
 windower.register_event('incoming chunk', function(id, data)
@@ -633,12 +653,13 @@ windower.register_event('load', 'login', function()
     
     local info = windower.ffxi.get_info()
     if not info.logged_in then return end
+    player = windower.ffxi.get_player()
     server = res.servers[info.server] and res.servers[info.server].en:lower() or "privateserver"
 end)
 
 windower.register_event('addon command', function(...)
     local commands = T{...}
-    local player = windower.ffxi.get_player()
+    player = windower.ffxi.get_player()
     if not player then return end
     if commands and commands[1]:lower() == "keep_buff" then
         settings.keep_buff_after_timer = not settings.keep_buff_after_timer
